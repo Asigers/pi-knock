@@ -1,6 +1,6 @@
 {
   "name": "@asigers/pi-knock",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Get notified when your Pi agent finishes, fails, or needs your attention.",
   "type": "module",
   "license": "MIT",
