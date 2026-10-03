@@ -1,17 +1,49 @@
-import { readFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
-import type { KnockConfig } from "./types.js";
+import { dirname, join } from "node:path";
+import type { ConfigPaths, KnockConfig, KnockCredentials } from "./types.js";
+
+type JsonRecord = Record<string, unknown>;
 
 const DEFAULT_CONFIG: KnockConfig = {
   minDurationSeconds: 30,
   projectName: "",
   openUrl: "",
   notify: { completed: true, error: true, aborted: false, input: true },
-  ntfy: { server: "https://ntfy.sh", topic: "", token: "" },
-  pushover: { user: "", token: "" },
-  webhook: { url: "", bearerToken: "" },
+  ntfy: { enabled: false, server: "https://ntfy.sh", topic: "", accessToken: "" },
+  pushover: { enabled: false, userKey: "", appToken: "" },
+  webhook: { enabled: false, url: "", bearerToken: "" },
 };
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readJson(path: string): JsonRecord {
+  try {
+    const value = JSON.parse(readFileSync(path, "utf8")) as unknown;
+    return isRecord(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function booleanValue(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+function nested(record: JsonRecord, key: string): JsonRecord {
+  const value = record[key];
+  return isRecord(value) ? value : {};
+}
 
 function toBoolean(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined || value === "") return fallback;
@@ -24,55 +56,298 @@ function toNumber(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
-function readJson(path: string): Partial<KnockConfig> {
-  try { return JSON.parse(readFileSync(path, "utf8")) as Partial<KnockConfig>; }
-  catch { return {}; }
+function firstDefined<T>(...values: Array<T | undefined>): T | undefined {
+  return values.find((value) => value !== undefined);
 }
 
-function mergeConfig(base: KnockConfig, file: Partial<KnockConfig>): KnockConfig {
+export function resolveConfigPaths(env: NodeJS.ProcessEnv = process.env): ConfigPaths {
+  const directory = env.PI_KNOCK_HOME || join(homedir(), ".pi", "agent", "pi-knock");
   return {
-    ...base, ...file,
-    notify: { ...base.notify, ...(file.notify ?? {}) },
-    ntfy: { ...base.ntfy, ...(file.ntfy ?? {}) },
-    pushover: { ...base.pushover, ...(file.pushover ?? {}) },
-    webhook: { ...base.webhook, ...(file.webhook ?? {}) },
+    directory,
+    configFile: env.PI_KNOCK_CONFIG || join(directory, "config.json"),
+    credentialsFile: env.PI_KNOCK_CREDENTIALS || join(directory, "credentials.json"),
+    legacyConfigFile: join(homedir(), ".pi", "agent", "pi-knock.json"),
+  };
+}
+
+function mergeFileSources(legacy: JsonRecord, configFile: JsonRecord, credentialsFile: JsonRecord): KnockConfig {
+  const legacyNotify = nested(legacy, "notify");
+  const fileNotify = nested(configFile, "notify");
+
+  const legacyNtfy = nested(legacy, "ntfy");
+  const fileNtfy = nested(configFile, "ntfy");
+  const credentialNtfy = nested(credentialsFile, "ntfy");
+
+  const legacyPushover = nested(legacy, "pushover");
+  const filePushover = nested(configFile, "pushover");
+  const credentialPushover = nested(credentialsFile, "pushover");
+
+  const legacyWebhook = nested(legacy, "webhook");
+  const fileWebhook = nested(configFile, "webhook");
+  const credentialWebhook = nested(credentialsFile, "webhook");
+
+  const ntfyTopic = firstDefined(
+    stringValue(fileNtfy.topic),
+    stringValue(legacyNtfy.topic),
+    DEFAULT_CONFIG.ntfy.topic,
+  )!;
+  const ntfyAccessToken = firstDefined(
+    stringValue(credentialNtfy.accessToken),
+    stringValue(fileNtfy.accessToken),
+    stringValue(fileNtfy.token),
+    stringValue(legacyNtfy.accessToken),
+    stringValue(legacyNtfy.token),
+    DEFAULT_CONFIG.ntfy.accessToken,
+  )!;
+
+  const pushoverUserKey = firstDefined(
+    stringValue(credentialPushover.userKey),
+    stringValue(filePushover.userKey),
+    stringValue(filePushover.user),
+    stringValue(legacyPushover.userKey),
+    stringValue(legacyPushover.user),
+    DEFAULT_CONFIG.pushover.userKey,
+  )!;
+  const pushoverAppToken = firstDefined(
+    stringValue(credentialPushover.appToken),
+    stringValue(filePushover.appToken),
+    stringValue(filePushover.token),
+    stringValue(legacyPushover.appToken),
+    stringValue(legacyPushover.token),
+    DEFAULT_CONFIG.pushover.appToken,
+  )!;
+
+  const webhookUrl = firstDefined(
+    stringValue(fileWebhook.url),
+    stringValue(legacyWebhook.url),
+    DEFAULT_CONFIG.webhook.url,
+  )!;
+  const webhookBearerToken = firstDefined(
+    stringValue(credentialWebhook.bearerToken),
+    stringValue(fileWebhook.bearerToken),
+    stringValue(legacyWebhook.bearerToken),
+    DEFAULT_CONFIG.webhook.bearerToken,
+  )!;
+
+  return {
+    minDurationSeconds: firstDefined(
+      numberValue(configFile.minDurationSeconds),
+      numberValue(legacy.minDurationSeconds),
+      DEFAULT_CONFIG.minDurationSeconds,
+    )!,
+    projectName: firstDefined(
+      stringValue(configFile.projectName),
+      stringValue(legacy.projectName),
+      DEFAULT_CONFIG.projectName,
+    )!,
+    openUrl: firstDefined(
+      stringValue(configFile.openUrl),
+      stringValue(legacy.openUrl),
+      DEFAULT_CONFIG.openUrl,
+    )!,
+    notify: {
+      completed: firstDefined(
+        booleanValue(fileNotify.completed),
+        booleanValue(legacyNotify.completed),
+        DEFAULT_CONFIG.notify.completed,
+      )!,
+      error: firstDefined(
+        booleanValue(fileNotify.error),
+        booleanValue(legacyNotify.error),
+        DEFAULT_CONFIG.notify.error,
+      )!,
+      aborted: firstDefined(
+        booleanValue(fileNotify.aborted),
+        booleanValue(legacyNotify.aborted),
+        DEFAULT_CONFIG.notify.aborted,
+      )!,
+      input: firstDefined(
+        booleanValue(fileNotify.input),
+        booleanValue(legacyNotify.input),
+        DEFAULT_CONFIG.notify.input,
+      )!,
+    },
+    ntfy: {
+      enabled: firstDefined(
+        booleanValue(fileNtfy.enabled),
+        booleanValue(legacyNtfy.enabled),
+        ntfyTopic ? true : undefined,
+        DEFAULT_CONFIG.ntfy.enabled,
+      )!,
+      server: firstDefined(
+        stringValue(fileNtfy.server),
+        stringValue(legacyNtfy.server),
+        DEFAULT_CONFIG.ntfy.server,
+      )!,
+      topic: ntfyTopic,
+      accessToken: ntfyAccessToken,
+    },
+    pushover: {
+      enabled: firstDefined(
+        booleanValue(filePushover.enabled),
+        booleanValue(legacyPushover.enabled),
+        pushoverUserKey && pushoverAppToken ? true : undefined,
+        DEFAULT_CONFIG.pushover.enabled,
+      )!,
+      userKey: pushoverUserKey,
+      appToken: pushoverAppToken,
+    },
+    webhook: {
+      enabled: firstDefined(
+        booleanValue(fileWebhook.enabled),
+        booleanValue(legacyWebhook.enabled),
+        webhookUrl ? true : undefined,
+        DEFAULT_CONFIG.webhook.enabled,
+      )!,
+      url: webhookUrl,
+      bearerToken: webhookBearerToken,
+    },
   };
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): KnockConfig {
-  const configPath = env.PI_KNOCK_CONFIG || join(homedir(), ".pi", "agent", "pi-knock.json");
-  const fromFile = mergeConfig(DEFAULT_CONFIG, readJson(configPath));
+  const paths = resolveConfigPaths(env);
+  const fromFiles = mergeFileSources(
+    readJson(paths.legacyConfigFile),
+    readJson(paths.configFile),
+    readJson(paths.credentialsFile),
+  );
+
+  const ntfyTopic = env.PI_KNOCK_NTFY_TOPIC ?? fromFiles.ntfy.topic;
+  const ntfyAccessToken =
+    env.PI_KNOCK_NTFY_ACCESS_TOKEN ??
+    env.PI_KNOCK_NTFY_TOKEN ??
+    fromFiles.ntfy.accessToken;
+
+  const pushoverUserKey =
+    env.PI_KNOCK_PUSHOVER_USER_KEY ??
+    env.PI_KNOCK_PUSHOVER_USER ??
+    fromFiles.pushover.userKey;
+  const pushoverAppToken =
+    env.PI_KNOCK_PUSHOVER_APP_TOKEN ??
+    env.PI_KNOCK_PUSHOVER_TOKEN ??
+    fromFiles.pushover.appToken;
+
+  const webhookUrl = env.PI_KNOCK_WEBHOOK_URL ?? fromFiles.webhook.url;
+
   return {
-    ...fromFile,
-    minDurationSeconds: toNumber(env.PI_KNOCK_MIN_DURATION, fromFile.minDurationSeconds),
-    projectName: env.PI_KNOCK_PROJECT ?? fromFile.projectName,
-    openUrl: env.PI_KNOCK_OPEN_URL ?? fromFile.openUrl,
+    ...fromFiles,
+    minDurationSeconds: toNumber(env.PI_KNOCK_MIN_DURATION, fromFiles.minDurationSeconds),
+    projectName: env.PI_KNOCK_PROJECT ?? fromFiles.projectName,
+    openUrl: env.PI_KNOCK_OPEN_URL ?? fromFiles.openUrl,
     notify: {
-      completed: toBoolean(env.PI_KNOCK_NOTIFY_COMPLETED, fromFile.notify.completed),
-      error: toBoolean(env.PI_KNOCK_NOTIFY_ERROR, fromFile.notify.error),
-      aborted: toBoolean(env.PI_KNOCK_NOTIFY_ABORTED, fromFile.notify.aborted),
-      input: toBoolean(env.PI_KNOCK_NOTIFY_INPUT, fromFile.notify.input),
+      completed: toBoolean(env.PI_KNOCK_NOTIFY_COMPLETED, fromFiles.notify.completed),
+      error: toBoolean(env.PI_KNOCK_NOTIFY_ERROR, fromFiles.notify.error),
+      aborted: toBoolean(env.PI_KNOCK_NOTIFY_ABORTED, fromFiles.notify.aborted),
+      input: toBoolean(env.PI_KNOCK_NOTIFY_INPUT, fromFiles.notify.input),
     },
     ntfy: {
-      server: env.PI_KNOCK_NTFY_SERVER ?? fromFile.ntfy.server,
-      topic: env.PI_KNOCK_NTFY_TOPIC ?? fromFile.ntfy.topic,
-      token: env.PI_KNOCK_NTFY_TOKEN ?? fromFile.ntfy.token,
+      enabled: toBoolean(
+        env.PI_KNOCK_NTFY_ENABLED,
+        fromFiles.ntfy.enabled || Boolean(ntfyTopic),
+      ),
+      server: env.PI_KNOCK_NTFY_SERVER ?? fromFiles.ntfy.server,
+      topic: ntfyTopic,
+      accessToken: ntfyAccessToken,
     },
     pushover: {
-      user: env.PI_KNOCK_PUSHOVER_USER ?? fromFile.pushover.user,
-      token: env.PI_KNOCK_PUSHOVER_TOKEN ?? fromFile.pushover.token,
+      enabled: toBoolean(
+        env.PI_KNOCK_PUSHOVER_ENABLED,
+        fromFiles.pushover.enabled || Boolean(pushoverUserKey && pushoverAppToken),
+      ),
+      userKey: pushoverUserKey,
+      appToken: pushoverAppToken,
     },
     webhook: {
-      url: env.PI_KNOCK_WEBHOOK_URL ?? fromFile.webhook.url,
-      bearerToken: env.PI_KNOCK_WEBHOOK_BEARER ?? fromFile.webhook.bearerToken,
+      enabled: toBoolean(
+        env.PI_KNOCK_WEBHOOK_ENABLED,
+        fromFiles.webhook.enabled || Boolean(webhookUrl),
+      ),
+      url: webhookUrl,
+      bearerToken: env.PI_KNOCK_WEBHOOK_BEARER ?? fromFiles.webhook.bearerToken,
     },
   };
 }
 
+export function loadStoredCredentials(env: NodeJS.ProcessEnv = process.env): KnockCredentials {
+  const paths = resolveConfigPaths(env);
+  const raw = readJson(paths.credentialsFile);
+  const result: KnockCredentials = {};
+
+  if ("ntfy" in raw) {
+    const ntfy = nested(raw, "ntfy");
+    result.ntfy = { accessToken: stringValue(ntfy.accessToken) ?? "" };
+  }
+  if ("pushover" in raw) {
+    const pushover = nested(raw, "pushover");
+    result.pushover = {
+      userKey: stringValue(pushover.userKey) ?? "",
+      appToken: stringValue(pushover.appToken) ?? "",
+    };
+  }
+  if ("webhook" in raw) {
+    const webhook = nested(raw, "webhook");
+    result.webhook = { bearerToken: stringValue(webhook.bearerToken) ?? "" };
+  }
+
+  return result;
+}
+
+function writeJson(path: string, value: unknown, mode: number): void {
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  const temporary = path + ".tmp-" + process.pid;
+  writeFileSync(temporary, JSON.stringify(value, null, 2) + "\n", { encoding: "utf8", mode });
+  try { chmodSync(temporary, mode); } catch {}
+  renameSync(temporary, path);
+  try { chmodSync(path, mode); } catch {}
+}
+
+export function saveConfig(config: KnockConfig, env: NodeJS.ProcessEnv = process.env): void {
+  const { configFile } = resolveConfigPaths(env);
+  writeJson(configFile, {
+    minDurationSeconds: config.minDurationSeconds,
+    projectName: config.projectName,
+    openUrl: config.openUrl,
+    notify: config.notify,
+    ntfy: {
+      enabled: config.ntfy.enabled,
+      server: config.ntfy.server,
+      topic: config.ntfy.topic,
+    },
+    pushover: {
+      enabled: config.pushover.enabled,
+    },
+    webhook: {
+      enabled: config.webhook.enabled,
+      url: config.webhook.url,
+    },
+  }, 0o600);
+}
+
+export function saveCredentials(credentials: KnockCredentials, env: NodeJS.ProcessEnv = process.env): void {
+  const { credentialsFile } = resolveConfigPaths(env);
+  const output: KnockCredentials = {};
+
+  if (credentials.ntfy) {
+    output.ntfy = { accessToken: credentials.ntfy.accessToken ?? "" };
+  }
+  if (credentials.pushover) {
+    output.pushover = {
+      userKey: credentials.pushover.userKey ?? "",
+      appToken: credentials.pushover.appToken ?? "",
+    };
+  }
+  if (credentials.webhook) {
+    output.webhook = { bearerToken: credentials.webhook.bearerToken ?? "" };
+  }
+
+  writeJson(credentialsFile, output, 0o600);
+}
+
 export function hasConfiguredChannel(config: KnockConfig): boolean {
   return Boolean(
-    (config.ntfy.topic && config.ntfy.server) ||
-    (config.pushover.user && config.pushover.token) ||
-    config.webhook.url
+    (config.ntfy.enabled && config.ntfy.topic && config.ntfy.server) ||
+    (config.pushover.enabled && config.pushover.userKey && config.pushover.appToken) ||
+    (config.webhook.enabled && config.webhook.url)
   );
 }
