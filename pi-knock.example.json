@@ -2,8 +2,22 @@
   "minDurationSeconds": 30,
   "projectName": "",
   "openUrl": "",
-  "notify": {"completed": true, "error": true, "aborted": false, "input": true},
-  "ntfy": {"server": "https://ntfy.sh", "topic": "", "token": ""},
-  "pushover": {"user": "", "token": ""},
-  "webhook": {"url": "", "bearerToken": ""}
+  "notify": {
+    "completed": true,
+    "error": true,
+    "aborted": false,
+    "input": true
+  },
+  "ntfy": {
+    "enabled": false,
+    "server": "https://ntfy.sh",
+    "topic": ""
+  },
+  "pushover": {
+    "enabled": false
+  },
+  "webhook": {
+    "enabled": false,
+    "url": ""
+  }
 }
