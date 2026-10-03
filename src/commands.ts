@@ -29,7 +29,6 @@ function statusText(config: KnockConfig): string {
     "ntfy      " + channelState(config.ntfy.enabled, Boolean(config.ntfy.server && config.ntfy.topic)),
     "Webhook   " + channelState(config.webhook.enabled, Boolean(config.webhook.url)),
     "",
-    "Min duration  " + config.minDurationSeconds + "s",
     "Task done     " + (config.notify.completed ? "✓" : "○"),
     "Needs input   " + (config.notify.input ? "✓" : "○"),
     "Errors        " + (config.notify.error ? "✓" : "○"),
