@@ -19,7 +19,6 @@ function tempEnv(): NodeJS.ProcessEnv {
 test("new environment variable names configure channels", () => {
   const env: NodeJS.ProcessEnv = {
     PI_KNOCK_HOME: "/path/that/does/not/exist",
-    PI_KNOCK_MIN_DURATION: "45",
     PI_KNOCK_NTFY_TOPIC: "agent-events",
     PI_KNOCK_NTFY_ACCESS_TOKEN: "secret",
     PI_KNOCK_PUSHOVER_USER_KEY: "user-key",
@@ -27,7 +26,6 @@ test("new environment variable names configure channels", () => {
     PI_KNOCK_NOTIFY_ABORTED: "true",
   };
   const config = loadConfig(env);
-  assert.equal(config.minDurationSeconds, 45);
   assert.equal(config.ntfy.topic, "agent-events");
   assert.equal(config.ntfy.accessToken, "secret");
   assert.equal(config.ntfy.enabled, true);
@@ -50,12 +48,17 @@ test("legacy environment variable names remain supported", () => {
   assert.equal(config.ntfy.accessToken, "legacy-ntfy");
 });
 
-test("invalid duration falls back to default", () => {
-  const config = loadConfig({
-    PI_KNOCK_HOME: "/path/that/does/not/exist",
-    PI_KNOCK_MIN_DURATION: "oops",
-  });
-  assert.equal(config.minDurationSeconds, 30);
+test("removed minimum-duration setting is ignored", () => {
+  const env = tempEnv();
+  const { configFile } = resolveConfigPaths(env);
+  writeFileSync(configFile, JSON.stringify({
+    minDurationSeconds: 999,
+    projectName: "demo",
+  }));
+
+  const config = loadConfig(env);
+  assert.equal(config.projectName, "demo");
+  assert.equal("minDurationSeconds" in config, false);
 });
 
 test("credentials are stored separately from normal config", () => {
@@ -73,6 +76,7 @@ test("credentials are stored separately from normal config", () => {
   const credentialsText = readFileSync(paths.credentialsFile, "utf8");
 
   assert.doesNotMatch(configText, /user-key|app-token/);
+  assert.doesNotMatch(configText, /minDurationSeconds/);
   assert.match(credentialsText, /user-key/);
   assert.match(credentialsText, /app-token/);
 
