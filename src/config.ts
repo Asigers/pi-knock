@@ -6,7 +6,6 @@ import type { ConfigPaths, KnockConfig, KnockCredentials } from "./types.js";
 type JsonRecord = Record<string, unknown>;
 
 const DEFAULT_CONFIG: KnockConfig = {
-  minDurationSeconds: 30,
   projectName: "",
   openUrl: "",
   notify: { completed: true, error: true, aborted: false, input: true },
@@ -36,10 +35,6 @@ function booleanValue(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
-function numberValue(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
-}
-
 function nested(record: JsonRecord, key: string): JsonRecord {
   const value = record[key];
   return isRecord(value) ? value : {};
@@ -48,12 +43,6 @@ function nested(record: JsonRecord, key: string): JsonRecord {
 function toBoolean(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined || value === "") return fallback;
   return !["0", "false", "no", "off"].includes(value.toLowerCase());
-}
-
-function toNumber(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 function firstDefined<T>(...values: Array<T | undefined>): T | undefined {
@@ -130,11 +119,6 @@ function mergeFileSources(legacy: JsonRecord, configFile: JsonRecord, credential
   )!;
 
   return {
-    minDurationSeconds: firstDefined(
-      numberValue(configFile.minDurationSeconds),
-      numberValue(legacy.minDurationSeconds),
-      DEFAULT_CONFIG.minDurationSeconds,
-    )!,
     projectName: firstDefined(
       stringValue(configFile.projectName),
       stringValue(legacy.projectName),
@@ -232,7 +216,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): KnockConfig {
 
   return {
     ...fromFiles,
-    minDurationSeconds: toNumber(env.PI_KNOCK_MIN_DURATION, fromFiles.minDurationSeconds),
     projectName: env.PI_KNOCK_PROJECT ?? fromFiles.projectName,
     openUrl: env.PI_KNOCK_OPEN_URL ?? fromFiles.openUrl,
     notify: {
@@ -305,7 +288,6 @@ function writeJson(path: string, value: unknown, mode: number): void {
 export function saveConfig(config: KnockConfig, env: NodeJS.ProcessEnv = process.env): void {
   const { configFile } = resolveConfigPaths(env);
   writeJson(configFile, {
-    minDurationSeconds: config.minDurationSeconds,
     projectName: config.projectName,
     openUrl: config.openUrl,
     notify: config.notify,
