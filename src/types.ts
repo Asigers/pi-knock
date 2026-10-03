@@ -40,7 +40,6 @@ export interface WebhookConfig {
 }
 
 export interface KnockConfig {
-  minDurationSeconds: number;
   projectName: string;
   openUrl: string;
   notify: NotifyConfig;
