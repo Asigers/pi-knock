@@ -1,9 +1,12 @@
 import type { KnockEvent, PushoverConfig } from "../types.js";
 
 export async function sendPushover(config: PushoverConfig, event: KnockEvent): Promise<void> {
-  if (!config.user || !config.token) return;
+  if (!config.enabled || !config.userKey || !config.appToken) return;
   const body = new URLSearchParams({
-    token: config.token, user: config.user, title: event.title, message: event.message,
+    token: config.appToken,
+    user: config.userKey,
+    title: event.title,
+    message: event.message,
   });
   if (event.openUrl) {
     body.set("url", event.openUrl);
@@ -15,5 +18,5 @@ export async function sendPushover(config: PushoverConfig, event: KnockEvent): P
     body,
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw new Error(`Pushover returned ${response.status}`);
+  if (!response.ok) throw new Error("Pushover returned " + response.status);
 }
