@@ -108,11 +108,9 @@ export default function piKnock(pi: ExtensionAPI): void {
 
   pi.on("agent_settled", async (_event, ctx) => {
     const durationMs = state.startedAt === null ? 0 : Date.now() - state.startedAt;
-    const minDurationMs = config.minDurationSeconds * 1000;
     const type: KnockEventType = state.outcome;
-    const shouldSend = type !== "completed" || durationMs >= minDurationMs;
 
-    if (shouldSend) await deliver(type, ctx, { durationMs });
+    await deliver(type, ctx, { durationMs });
 
     state.startedAt = null;
     state.prompt = "";
