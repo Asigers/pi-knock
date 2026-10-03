@@ -2,17 +2,16 @@
 
 **Stop babysitting your Pi agent.**
 
-pi-knock notifies your phone, Apple Watch, or webhook when Pi finishes a meaningful task, fails, or pauses for your input.
+pi-knock notifies your phone, Apple Watch, or webhook whenever a Pi conversation settles, fails, or pauses for your input.
 
 > Pi works quietly. It knocks when it needs you.
 
 ## Features
 
-- ✅ **Task finished** — sent after `agent_settled`
+- ✅ **Every completed conversation** — one notification after `agent_settled`
 - ❓ **Needs your attention** — sent when Pi opens a blocking input / confirm / select prompt
-- ❌ **Task failed** — sent even for short runs
-- ⏹️ **Task stopped** — optional
-- ⏱️ **Noise control** — successful tasks shorter than 30 seconds are ignored by default
+- ❌ **Task failed** — sent when the settled outcome is an error
+- ⏹️ **Task stopped** — optional for aborted runs
 - 📱 **Pushover, ntfy, and generic webhooks**
 - ⌚ **Apple Watch** — via iPhone notification mirroring
 - 🔗 **Optional session URL** — useful with Pi-Web
@@ -67,7 +66,61 @@ Send another test at any time with:
 /knock test
 ```
 
-`/knock test` bypasses the minimum-duration filter.
+## When notifications are sent
+
+For a normal conversation, the lifecycle is:
+
+```text
+user prompt
+   ↓
+Pi works
+   ↓
+retries / tools / compaction / queued work if needed
+   ↓
+agent_settled
+   ↓
+one completion notification
+```
+
+There is **no minimum-duration filter**. A completed conversation that takes 2 seconds and one that takes 20 minutes both notify once.
+
+Default outcome behavior:
+
+| Situation | Default behavior |
+| --- | --- |
+| Completed conversation | Notify |
+| Blocking input / confirm prompt | Notify immediately |
+| Failed conversation | Notify when settled |
+| Aborted conversation | Silent, configurable |
+| `/knock test` | Send immediately |
+
+pi-knock suppresses its own setup dialogs, so `/knock setup` does not generate fake “needs input” alerts.
+
+## Notification content
+
+Completion notifications use deterministic local data; pi-knock does not make another LLM call to summarize the result.
+
+By default:
+
+```text
+Title:
+<project> · Task finished
+
+Body:
+<original user prompt> · <elapsed time>
+```
+
+Example:
+
+```text
+pi-knock · Task finished
+
+Fix why completion notifications sometimes do not arrive · 1m 42s
+```
+
+The project name comes from the current working directory unless `projectName` overrides it.
+
+The prompt is compacted to a short single-line form before sending.
 
 ## Pushover → Apple Watch
 
@@ -106,7 +159,6 @@ Contains ordinary behavior and endpoint settings only:
 
 ```json
 {
-  "minDurationSeconds": 30,
   "projectName": "",
   "openUrl": "",
   "notify": {
@@ -176,7 +228,6 @@ Environment variables are useful for Pi-Web daemons, containers, CI, or external
 | `PI_KNOCK_HOME` | Override the pi-knock config directory |
 | `PI_KNOCK_CONFIG` | Override the normal config file path |
 | `PI_KNOCK_CREDENTIALS` | Override the credentials file path |
-| `PI_KNOCK_MIN_DURATION` | Minimum successful run duration in seconds |
 | `PI_KNOCK_PROJECT` | Override project name |
 | `PI_KNOCK_OPEN_URL` | URL opened from supported notifications |
 | `PI_KNOCK_NOTIFY_COMPLETED` | Enable / disable completion notifications |
@@ -213,19 +264,6 @@ Legacy `PI_KNOCK_NTFY_TOKEN` is still accepted.
 | `PI_KNOCK_WEBHOOK_URL` | Generic webhook endpoint |
 | `PI_KNOCK_WEBHOOK_BEARER` | Optional bearer token |
 
-## Notification rules
-
-| Situation | Default behavior |
-| --- | --- |
-| Successful run < 30 seconds | Silent |
-| Successful run ≥ 30 seconds | Notify |
-| Blocking input / confirm prompt | Notify immediately |
-| Failed run | Notify immediately when settled |
-| Aborted run | Silent |
-| `/knock test` | Always send |
-
-pi-knock suppresses its own setup dialogs, so `/knock setup` does not generate fake “needs input” alerts.
-
 ## Why `agent_settled`?
 
 Pi can continue automatically after `agent_end` because of retries, recovery, compaction, or queued work.
@@ -251,6 +289,8 @@ Old Pushover fields are also accepted:
 }
 ```
 
+Old `minDurationSeconds` / `PI_KNOCK_MIN_DURATION` settings are ignored. Completion notifications are now always sent when enabled.
+
 New interactive setup writes the split config/credentials format.
 
 ## Security
@@ -275,9 +315,8 @@ pi -e .
 
 ## Roadmap
 
-- [x] `agent_settled` completion notifications
+- [x] every `agent_settled` completion notification
 - [x] blocking input / confirmation notifications
-- [x] minimum-duration noise filter
 - [x] Pushover / Apple Watch
 - [x] ntfy
 - [x] generic webhook
@@ -285,6 +324,7 @@ pi -e .
 - [x] `/knock status`
 - [x] `/knock test`
 - [x] split config / credentials storage
+- [ ] delivery retry / last-delivery diagnostics
 - [ ] masked secret input
 - [ ] richer Pi-Web session deep links
 - [ ] Bark provider
