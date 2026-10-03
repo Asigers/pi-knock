@@ -1,0 +1,20 @@
+import type { KnockEvent, NtfyConfig } from "../types.js";
+
+export async function sendNtfy(config: NtfyConfig, event: KnockEvent): Promise<void> {
+  if (!config.server || !config.topic) return;
+  const endpoint = `${config.server.replace(/\/$/, "")}/${encodeURIComponent(config.topic)}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "text/plain; charset=utf-8",
+    Title: event.title,
+    Tags: event.type === "completed" ? "white_check_mark" : event.type === "input" ? "bell" : "warning",
+  };
+  if (config.token) headers.Authorization = `Bearer ${config.token}`;
+  if (event.openUrl) {
+    headers.Click = event.openUrl;
+    headers.Actions = `view, Open session, ${event.openUrl}, clear=true`;
+  }
+  const response = await fetch(endpoint, {
+    method: "POST", headers, body: event.message, signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) throw new Error(`ntfy returned ${response.status}`);
+}
