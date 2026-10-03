@@ -1,6 +1,6 @@
 {
   "name": "@asigers/pi-knock",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Get notified when your Pi agent finishes, fails, or needs your attention.",
   "type": "module",
   "license": "MIT",
@@ -21,5 +21,5 @@
     "test": "node --test --experimental-strip-types test/*.test.ts",
     "check": "npm run typecheck && npm test"
   },
-  "files": ["src","README.md","LICENSE"]
+  "files": ["src","README.md","LICENSE","pi-knock.example.json"]
 }
