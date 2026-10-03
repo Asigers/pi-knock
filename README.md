@@ -2,32 +2,28 @@
 
 **Stop babysitting your Pi agent.**
 
-pi-knock notifies your phone, Apple Watch, or any webhook when Pi finishes a meaningful task, fails, or pauses for your input.
+pi-knock notifies your phone, Apple Watch, or webhook when Pi finishes a meaningful task, fails, or pauses for your input.
 
 > Pi works quietly. It knocks when it needs you.
 
-## What it does
+## Features
 
-- ✅ **Task finished** — sent after `agent_settled`, not the earlier `agent_end`
+- ✅ **Task finished** — sent after `agent_settled`
 - ❓ **Needs your attention** — sent when Pi opens a blocking input / confirm / select prompt
 - ❌ **Task failed** — sent even for short runs
 - ⏹️ **Task stopped** — optional
 - ⏱️ **Noise control** — successful tasks shorter than 30 seconds are ignored by default
-- 📱 **Cross-device** — ntfy, Pushover, and generic webhooks
-- ⌚ **Apple Watch** — use Pushover or ntfy on iPhone and mirror notifications to Apple Watch
-- 🔗 **Session link** — optionally attach a Pi-Web/session URL to the notification
+- 📱 **Pushover, ntfy, and generic webhooks**
+- ⌚ **Apple Watch** — via iPhone notification mirroring
+- 🔗 **Optional session URL** — useful with Pi-Web
+- 🔐 **Split settings and credentials storage**
+- 🧭 **Interactive setup** — `/knock setup`, `/knock status`, `/knock test`
 
-pi-knock intentionally does not run its own notification server or require a companion app.
-
-## Why `agent_settled`?
-
-Pi can continue automatically after `agent_end` because of retries, recovery, compaction, or queued work. `agent_settled` is the final notification boundary: Pi will not continue automatically after it fires.
-
-That makes it the right event for “come back now” notifications.
+pi-knock does not run its own push server and does not require a companion app.
 
 ## Install
 
-Until an npm package name is finalized, install directly from GitHub:
+Install directly from GitHub:
 
 ```bash
 pi install git:github.com/Asigers/pi-knock
@@ -35,82 +31,187 @@ pi install git:github.com/Asigers/pi-knock
 
 Then restart Pi or run `/reload`.
 
-Pi packages can also be tried without permanently adding them:
+You can also try it without permanently installing:
 
 ```bash
 pi -e git:github.com/Asigers/pi-knock
 ```
 
-## Quick start: Pushover → Apple Watch
+## Quick start
 
-1. Install **Pushover** on your iPhone.
-2. Enable Pushover notifications on the Apple Watch via the Watch app.
-3. Create a Pushover application and copy its app token and your user key.
-4. Export the credentials before starting Pi:
-
-```bash
-export PI_KNOCK_PUSHOVER_USER="your-user-key"
-export PI_KNOCK_PUSHOVER_TOKEN="your-app-token"
-```
-
-Run Pi and give it a task that takes more than 30 seconds. When the run fully settles, your iPhone / Apple Watch should receive a notification.
-
-## Quick start: ntfy
-
-```bash
-export PI_KNOCK_NTFY_TOPIC="your-private-topic"
-```
-
-The default server is `https://ntfy.sh`. For authenticated or self-hosted ntfy:
-
-```bash
-export PI_KNOCK_NTFY_SERVER="https://ntfy.example.com"
-export PI_KNOCK_NTFY_TOKEN="your-access-token"
-```
-
-## Configuration file
-
-For stable settings, create:
+Run:
 
 ```text
-~/.pi/agent/pi-knock.json
+/knock setup
 ```
 
-Start from [`pi-knock.example.json`](./pi-knock.example.json). Environment variables override values from the JSON config file.
+Choose a provider:
 
-## Environment variables
+```text
+Pushover (iPhone / Apple Watch)
+ntfy
+Webhook
+```
 
-| Variable | Purpose |
-| --- | --- |
-| `PI_KNOCK_MIN_DURATION` | Minimum successful run duration in seconds; default `30` |
-| `PI_KNOCK_PROJECT` | Override project name shown in notifications |
-| `PI_KNOCK_OPEN_URL` | URL opened from supported notifications, e.g. a Pi-Web session |
-| `PI_KNOCK_NOTIFY_COMPLETED` | Enable / disable completion notifications |
-| `PI_KNOCK_NOTIFY_ERROR` | Enable / disable failure notifications |
-| `PI_KNOCK_NOTIFY_ABORTED` | Enable / disable aborted-run notifications |
-| `PI_KNOCK_NOTIFY_INPUT` | Enable / disable attention notifications |
-| `PI_KNOCK_NTFY_SERVER` | ntfy server URL |
-| `PI_KNOCK_NTFY_TOPIC` | ntfy topic |
-| `PI_KNOCK_NTFY_TOKEN` | ntfy bearer token |
-| `PI_KNOCK_PUSHOVER_USER` | Pushover user key |
-| `PI_KNOCK_PUSHOVER_TOKEN` | Pushover application token |
-| `PI_KNOCK_WEBHOOK_URL` | Generic webhook endpoint |
-| `PI_KNOCK_WEBHOOK_BEARER` | Optional webhook bearer token |
+After saving, pi-knock immediately sends a test notification for that provider.
 
-## Generic webhook payload
+Check the current configuration with:
+
+```text
+/knock status
+```
+
+Send another test at any time with:
+
+```text
+/knock test
+```
+
+`/knock test` bypasses the minimum-duration filter.
+
+## Pushover → Apple Watch
+
+For the simplest Apple Watch path:
+
+1. Install **Pushover** on the iPhone.
+2. Enable Pushover notification mirroring in the Watch app.
+3. Create a Pushover application.
+4. Copy your **User Key** and **Application API Token**.
+5. Run `/knock setup` and choose **Pushover (iPhone / Apple Watch)**.
+
+pi-knock stores the values using explicit names:
+
+```text
+userKey
+appToken
+```
+
+instead of ambiguous `user` / `token` fields.
+
+> Pi's standard `ctx.ui.input()` is plain text, not a masked password field. pi-knock warns before asking for credentials. Use setup only in a private terminal/session.
+
+## Configuration storage
+
+The recommended layout is:
+
+```text
+~/.pi/agent/pi-knock/
+├── config.json
+└── credentials.json
+```
+
+### `config.json`
+
+Contains ordinary behavior and endpoint settings only:
 
 ```json
 {
-  "type": "completed",
-  "title": "my-project · Task finished",
-  "message": "Fix the failing tests · 6m 12s",
-  "project": "my-project",
-  "prompt": "Fix the failing tests",
-  "durationMs": 372000,
-  "openUrl": "https://example.com/session/123",
-  "timestamp": "2026-10-03T08:00:00.000Z"
+  "minDurationSeconds": 30,
+  "projectName": "",
+  "openUrl": "",
+  "notify": {
+    "completed": true,
+    "error": true,
+    "aborted": false,
+    "input": true
+  },
+  "ntfy": {
+    "enabled": false,
+    "server": "https://ntfy.sh",
+    "topic": ""
+  },
+  "pushover": {
+    "enabled": true
+  },
+  "webhook": {
+    "enabled": false,
+    "url": ""
+  }
 }
 ```
+
+See [`pi-knock.example.json`](./pi-knock.example.json).
+
+### `credentials.json`
+
+Contains credentials only:
+
+```json
+{
+  "pushover": {
+    "userKey": "...",
+    "appToken": "..."
+  }
+}
+```
+
+On POSIX systems pi-knock writes this file with `0600` permissions.
+
+Do not commit this file.
+
+## Configuration precedence
+
+Highest priority wins:
+
+```text
+environment variables
+        ↓
+credentials.json
+        ↓
+config.json
+        ↓
+legacy ~/.pi/agent/pi-knock.json
+        ↓
+defaults
+```
+
+Environment variables are useful for Pi-Web daemons, containers, CI, or external secret managers.
+
+## Environment variables
+
+### General
+
+| Variable | Purpose |
+| --- | --- |
+| `PI_KNOCK_HOME` | Override the pi-knock config directory |
+| `PI_KNOCK_CONFIG` | Override the normal config file path |
+| `PI_KNOCK_CREDENTIALS` | Override the credentials file path |
+| `PI_KNOCK_MIN_DURATION` | Minimum successful run duration in seconds |
+| `PI_KNOCK_PROJECT` | Override project name |
+| `PI_KNOCK_OPEN_URL` | URL opened from supported notifications |
+| `PI_KNOCK_NOTIFY_COMPLETED` | Enable / disable completion notifications |
+| `PI_KNOCK_NOTIFY_ERROR` | Enable / disable failure notifications |
+| `PI_KNOCK_NOTIFY_ABORTED` | Enable / disable aborted notifications |
+| `PI_KNOCK_NOTIFY_INPUT` | Enable / disable attention notifications |
+
+### Pushover
+
+| Variable | Purpose |
+| --- | --- |
+| `PI_KNOCK_PUSHOVER_ENABLED` | Enable / disable Pushover |
+| `PI_KNOCK_PUSHOVER_USER_KEY` | Pushover User Key |
+| `PI_KNOCK_PUSHOVER_APP_TOKEN` | Pushover Application API Token |
+
+Legacy `PI_KNOCK_PUSHOVER_USER` and `PI_KNOCK_PUSHOVER_TOKEN` are still accepted.
+
+### ntfy
+
+| Variable | Purpose |
+| --- | --- |
+| `PI_KNOCK_NTFY_ENABLED` | Enable / disable ntfy |
+| `PI_KNOCK_NTFY_SERVER` | ntfy server URL |
+| `PI_KNOCK_NTFY_TOPIC` | ntfy topic |
+| `PI_KNOCK_NTFY_ACCESS_TOKEN` | ntfy access token |
+
+Legacy `PI_KNOCK_NTFY_TOKEN` is still accepted.
+
+### Webhook
+
+| Variable | Purpose |
+| --- | --- |
+| `PI_KNOCK_WEBHOOK_ENABLED` | Enable / disable webhook |
+| `PI_KNOCK_WEBHOOK_URL` | Generic webhook endpoint |
+| `PI_KNOCK_WEBHOOK_BEARER` | Optional bearer token |
 
 ## Notification rules
 
@@ -120,36 +221,49 @@ Start from [`pi-knock.example.json`](./pi-knock.example.json). Environment varia
 | Successful run ≥ 30 seconds | Notify |
 | Blocking input / confirm prompt | Notify immediately |
 | Failed run | Notify immediately when settled |
-| Aborted run | Silent (configurable) |
+| Aborted run | Silent |
+| `/knock test` | Always send |
 
-## Architecture
+pi-knock suppresses its own setup dialogs, so `/knock setup` does not generate fake “needs input” alerts.
+
+## Why `agent_settled`?
+
+Pi can continue automatically after `agent_end` because of retries, recovery, compaction, or queued work.
+
+`agent_settled` is the final notification boundary: Pi will not continue automatically after it fires. That makes it the correct event for a “come back now” notification.
+
+## Backward compatibility
+
+The old single-file configuration is still read:
 
 ```text
-Pi
- │
- ├─ before_agent_start ── remembers prompt + start time
- ├─ ui_prompt_start ───── attention notification
- ├─ agent_before_settle ─ remembers final outcome
- └─ agent_settled ─────── completion / failure notification
-             │
-             ▼
-        pi-knock router
-          │    │    │
-          ▼    ▼    ▼
-        ntfy Pushover Webhook
-          │       │
-          ▼       ▼
-        iPhone / Android
-              │
-              ▼
-         Apple Watch
+~/.pi/agent/pi-knock.json
 ```
+
+Old Pushover fields are also accepted:
+
+```json
+{
+  "pushover": {
+    "user": "...",
+    "token": "..."
+  }
+}
+```
+
+New interactive setup writes the split config/credentials format.
 
 ## Security
 
-Extensions run inside the Pi process with your user permissions. Keep push credentials private.
+Extensions run inside the Pi process with your user permissions.
 
-Prefer environment variables for tokens on shared machines. pi-knock sends only a short form of the current user prompt plus project name, duration, and event type.
+- Secrets are kept out of `config.json`.
+- `credentials.json` uses owner-only permissions where supported.
+- Environment variables can override disk credentials.
+- `/knock status` never displays secret values.
+- Notification failures do not interrupt the Pi agent run.
+
+By default, notifications include a short form of the current user prompt. Redaction controls are planned.
 
 ## Development
 
@@ -164,13 +278,17 @@ pi -e .
 - [x] `agent_settled` completion notifications
 - [x] blocking input / confirmation notifications
 - [x] minimum-duration noise filter
+- [x] Pushover / Apple Watch
 - [x] ntfy
-- [x] Pushover / Apple Watch path
 - [x] generic webhook
+- [x] `/knock setup`
+- [x] `/knock status`
+- [x] `/knock test`
+- [x] split config / credentials storage
+- [ ] masked secret input
 - [ ] richer Pi-Web session deep links
 - [ ] Bark provider
 - [ ] Gotify provider
-- [ ] `/knock test` and `/knock status` commands
 - [ ] per-project notification policy
 - [ ] notification redaction controls
 - [ ] remote reply / approval experiments
