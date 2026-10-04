@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security policy
+    url: https://github.com/Asigers/pi-knock/security
+    about: Do not post credentials or vulnerability details in a public issue.
