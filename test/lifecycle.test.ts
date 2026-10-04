@@ -23,7 +23,7 @@ test("lifecycle sends one settled notification, includes session name, and suppr
       body: JSON.parse(String(init?.body)),
       headers: init?.headers as Record<string, string>,
     });
-    return new Response("", { status: 204 });
+    return new Response(null, { status: 204 });
   }) as typeof fetch;
 
   const handlers = new Map<string, Handler>();
