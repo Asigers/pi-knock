@@ -5,9 +5,6 @@ on:
     branches: [main]
     paths:
       - package.json
-      - tsconfig.json
-      - src/**
-      - test/**
   workflow_dispatch:
 
 permissions:
@@ -17,20 +14,16 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: "22.19.0"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
-
-      - name: Generate lockfile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          package-manager-cache: false
 
       - name: Install reproducibly
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -38,19 +31,25 @@ jobs:
       - name: Check
         run: npm run check
 
-      - name: Commit lockfile when needed
-        run: |
-          if ! git diff --quiet -- package-lock.json || [ -n "$(git status --porcelain -- package-lock.json)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore: update package lock"
-            git push origin HEAD:main
-          fi
-
       - name: Read package version
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Check npm version
+        id: npm
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if npm view "@asigers/pi-knock@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "@asigers/pi-knock@$VERSION is already published"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm with trusted publishing
+        if: steps.npm.outputs.published != 'true'
+        run: npm publish --access public
 
       - name: Create GitHub release if missing
         env:
@@ -61,17 +60,8 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "$TAG already exists"
           else
-            gh release create "$TAG"               --target "$(git rev-parse HEAD)"               --title "$TAG"               --generate-notes
-          fi
-
-      - name: Publish to npm when NPM_TOKEN is configured
-        if: env.NPM_TOKEN != ''
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          if npm view "@asigers/pi-knock@$VERSION" version >/dev/null 2>&1; then
-            echo "@asigers/pi-knock@$VERSION already published"
-          else
-            npm publish --access public --provenance
+            gh release create "$TAG" \
+              --target "$(git rev-parse HEAD)" \
+              --title "$TAG" \
+              --generate-notes
           fi
