@@ -6,6 +6,7 @@ import { notify } from "./notifier.js";
 import type { KnockEventType } from "./types.js";
 
 interface RunState {
+  activeRun: boolean;
   startedAt: number | null;
   prompt: string;
   outcome: "completed" | "aborted" | "error";
@@ -16,6 +17,7 @@ interface RunState {
 export default function piKnock(pi: ExtensionAPI): void {
   let config = loadConfig();
   const state: RunState = {
+    activeRun: false,
     startedAt: null,
     prompt: "",
     outcome: "completed",
@@ -48,11 +50,13 @@ export default function piKnock(pi: ExtensionAPI): void {
     const event = makeEvent({
       type,
       project: projectName(ctx.cwd, config.projectName),
+      sessionName: pi.getSessionName() || undefined,
       prompt: state.prompt,
       durationMs: extra.durationMs,
       openUrl: config.openUrl,
       inputKind: extra.inputKind,
       inputTitle: extra.inputTitle,
+      contentMode: config.contentMode,
     });
     const results = await notify(config, event);
     const failed = results.filter((result) => !result.ok);
@@ -82,6 +86,7 @@ export default function piKnock(pi: ExtensionAPI): void {
 
   pi.on("before_agent_start", async (event) => {
     config = loadConfig();
+    state.activeRun = true;
     state.startedAt = Date.now();
     state.prompt = event.prompt;
     state.outcome = "completed";
@@ -93,7 +98,7 @@ export default function piKnock(pi: ExtensionAPI): void {
   });
 
   pi.on("ui_prompt_start", async (event, ctx) => {
-    if (state.internalUiDepth > 0) return;
+    if (!state.activeRun || state.internalUiDepth > 0) return;
 
     const key = event.kind + ":" + (event.title ?? "");
     if (state.lastPromptNotificationKey === key) return;
@@ -107,9 +112,12 @@ export default function piKnock(pi: ExtensionAPI): void {
   });
 
   pi.on("agent_settled", async (_event, ctx) => {
+    if (!state.activeRun) return;
+
     const durationMs = state.startedAt === null ? 0 : Date.now() - state.startedAt;
     const type: KnockEventType = state.outcome;
 
+    state.activeRun = false;
     await deliver(type, ctx, { durationMs });
 
     state.startedAt = null;
