@@ -1,3 +1,4 @@
+import { httpDeliveryError } from "../errors.js";
 import type { KnockEvent, PushoverConfig } from "../types.js";
 
 export async function sendPushover(config: PushoverConfig, event: KnockEvent): Promise<void> {
@@ -18,5 +19,5 @@ export async function sendPushover(config: PushoverConfig, event: KnockEvent): P
     body,
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw new Error("Pushover returned " + response.status);
+  if (!response.ok) throw httpDeliveryError("Pushover", response.status);
 }
