@@ -6,6 +6,10 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional JSON Schema URL for editor validation."
+    },
     "projectName": {
       "type": "string",
       "default": "",
@@ -20,17 +24,32 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "completed": { "type": "boolean", "default": true },
-        "error": { "type": "boolean", "default": true },
-        "aborted": { "type": "boolean", "default": false },
-        "input": { "type": "boolean", "default": true }
+        "completed": {
+          "type": "boolean",
+          "default": true
+        },
+        "error": {
+          "type": "boolean",
+          "default": true
+        },
+        "aborted": {
+          "type": "boolean",
+          "default": false
+        },
+        "input": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "ntfy": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "default": false },
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
         "server": {
           "type": "string",
           "default": "https://ntfy.sh",
@@ -47,14 +66,20 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "default": false }
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        }
       }
     },
     "webhook": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "default": false },
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
         "url": {
           "type": "string",
           "default": "",
