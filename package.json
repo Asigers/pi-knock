@@ -4,13 +4,38 @@
   "description": "Get notified when your Pi agent finishes, fails, or needs your attention.",
   "type": "module",
   "license": "MIT",
-  "keywords": ["pi-package","pi-extension","pi","notification","ntfy","pushover","apple-watch"],
-  "repository": {"type":"git","url":"https://github.com/Asigers/pi-knock.git"},
+  "author": "Asigers",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi",
+    "notification",
+    "ntfy",
+    "pushover",
+    "apple-watch"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Asigers/pi-knock.git"
+  },
   "homepage": "https://github.com/Asigers/pi-knock#readme",
-  "bugs": {"url":"https://github.com/Asigers/pi-knock/issues"},
-  "engines": {"node": ">=22.19.0"},
-  "pi": {"extensions": ["./src/index.ts"]},
-  "peerDependencies": {"@earendil-works/pi-coding-agent": ">=0.87.0"},
+  "bugs": {
+    "url": "https://github.com/Asigers/pi-knock/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^1.0.0",
     "@types/node": "^22.0.0",
@@ -21,5 +46,13 @@
     "test": "node --test --experimental-strip-types test/*.test.ts",
     "check": "npm run typecheck && npm test"
   },
-  "files": ["src","README.md","LICENSE","pi-knock.example.json"]
+  "files": [
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "LICENSE",
+    "pi-knock.example.json",
+    "config.schema.json"
+  ]
 }
