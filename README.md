@@ -1,5 +1,7 @@
 # pi-knock
 
+English | [简体中文](./README.zh-CN.md)
+
 **Stop babysitting your Pi agent.**
 
 pi-knock notifies your phone, Apple Watch, or webhook whenever a Pi conversation settles, fails, or pauses for your input.
