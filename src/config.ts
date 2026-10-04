@@ -13,7 +13,7 @@ type JsonRecord = Record<string, unknown>;
 const DEFAULT_CONFIG: KnockConfig = {
   projectName: "",
   openUrl: "",
-  contentMode: "prompt",
+  contentMode: "project-only",
   notify: { completed: true, error: true, aborted: false, input: true },
   ntfy: { enabled: false, server: "https://ntfy.sh", topic: "", accessToken: "" },
   pushover: { enabled: false, userKey: "", appToken: "" },
