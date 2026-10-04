@@ -22,6 +22,12 @@ pi-knock does not run its own push server and does not require a companion app.
 
 ## Install
 
+### npm (recommended)
+
+```bash
+pi install npm:@asigers/pi-knock
+```
+
 ### Stable Git release
 
 ```bash
@@ -32,14 +38,6 @@ pi install git:github.com/Asigers/pi-knock@v0.2.1
 
 ```bash
 pi install git:github.com/Asigers/pi-knock
-```
-
-### npm
-
-After the npm package is published:
-
-```bash
-pi install npm:@asigers/pi-knock
 ```
 
 Restart Pi or run `/reload` after installing.
@@ -377,7 +375,7 @@ Using `-ne` avoids loading another installed copy of pi-knock while testing the 
 
 ## Releases
 
-Changes are tracked in [CHANGELOG.md](./CHANGELOG.md). Security reporting guidance is in [SECURITY.md](./SECURITY.md).
+Changes are tracked in [CHANGELOG.md](./CHANGELOG.md). Publishing uses npm Trusted Publishing with GitHub Actions OIDC, so the release workflow does not require a long-lived npm token. Security reporting guidance is in [SECURITY.md](./SECURITY.md).
 
 ## License
 
