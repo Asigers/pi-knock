@@ -67,6 +67,8 @@ Useful commands:
 
 For Apple Watch, install Pushover on your iPhone and enable notification mirroring in the Watch app.
 
+New to Pushover? See the [Pushover setup guide (简体中文)](./docs/pushover-setup.zh-CN.md) for account registration, app installation, User Key, and Application API Token setup.
+
 ## Notification behavior
 
 By default:
