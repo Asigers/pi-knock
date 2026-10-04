@@ -1,12 +1,70 @@
+import { DeliveryError } from "./errors.js";
 import { sendNtfy } from "./channels/ntfy.js";
 import { sendPushover } from "./channels/pushover.js";
 import { sendWebhook } from "./channels/webhook.js";
-import type { ChannelName, KnockConfig, KnockEvent } from "./types.js";
+import type { ChannelName, KnockConfig, KnockEvent, KnockEventType } from "./types.js";
 
 export interface DeliveryResult {
   channel: ChannelName;
   ok: boolean;
+  attempts: number;
   error?: string;
+}
+
+export interface DeliveryReport {
+  timestamp: string;
+  eventType: KnockEventType;
+  results: DeliveryResult[];
+}
+
+interface RetryOptions {
+  retryDelaysMs?: number[];
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const DEFAULT_RETRY_DELAYS_MS = [1_000, 3_000];
+let lastDeliveryReport: DeliveryReport | undefined;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryable(error: unknown): boolean {
+  return error instanceof DeliveryError ? error.retryable : true;
+}
+
+export async function runWithRetry(
+  channel: ChannelName,
+  fn: () => Promise<void>,
+  options: RetryOptions = {},
+): Promise<DeliveryResult> {
+  const retryDelaysMs = options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
+  const wait = options.sleep ?? sleep;
+  let attempts = 0;
+  let lastError: unknown;
+
+  for (let index = 0; index <= retryDelaysMs.length; index += 1) {
+    attempts += 1;
+    try {
+      await fn();
+      return { channel, ok: true, attempts };
+    } catch (error) {
+      lastError = error;
+      if (!isRetryable(error) || index === retryDelaysMs.length) break;
+      await wait(retryDelaysMs[index]);
+    }
+  }
+
+  return {
+    channel,
+    ok: false,
+    attempts,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+  };
+}
+
+export function getLastDeliveryReport(): DeliveryReport | undefined {
+  return lastDeliveryReport;
 }
 
 export async function notify(
@@ -23,7 +81,7 @@ export async function notify(
     config.ntfy.topic &&
     config.ntfy.server
   ) {
-    jobs.push(run("ntfy", () => sendNtfy(config.ntfy, event)));
+    jobs.push(runWithRetry("ntfy", () => sendNtfy(config.ntfy, event)));
   }
 
   if (
@@ -32,7 +90,7 @@ export async function notify(
     config.pushover.userKey &&
     config.pushover.appToken
   ) {
-    jobs.push(run("pushover", () => sendPushover(config.pushover, event)));
+    jobs.push(runWithRetry("pushover", () => sendPushover(config.pushover, event)));
   }
 
   if (
@@ -40,21 +98,14 @@ export async function notify(
     config.webhook.enabled &&
     config.webhook.url
   ) {
-    jobs.push(run("webhook", () => sendWebhook(config.webhook, event)));
+    jobs.push(runWithRetry("webhook", () => sendWebhook(config.webhook, event)));
   }
 
-  return Promise.all(jobs);
-}
-
-async function run(channel: DeliveryResult["channel"], fn: () => Promise<void>): Promise<DeliveryResult> {
-  try {
-    await fn();
-    return { channel, ok: true };
-  } catch (error) {
-    return {
-      channel,
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
+  const results = await Promise.all(jobs);
+  lastDeliveryReport = {
+    timestamp: new Date().toISOString(),
+    eventType: event.type,
+    results,
+  };
+  return results;
 }
