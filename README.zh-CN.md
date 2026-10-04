@@ -67,6 +67,8 @@ pi install git:github.com/Asigers/pi-knock
 
 如果需要 Apple Watch 通知，在 iPhone 安装 Pushover，并在 Watch App 中开启通知镜像即可。
 
+第一次使用 Pushover？查看 **[Pushover 完整配置指南](./docs/pushover-setup.zh-CN.md)**，包含账号注册、App 下载、User Key、Application API Token 和 Apple Watch 配置。
+
 ## 通知规则
 
 默认行为：
