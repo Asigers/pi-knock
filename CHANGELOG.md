@@ -10,7 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - Automatic notification delivery retries for transient failures.
 - `/knock doctor` diagnostics with last-delivery status and attempt count.
-- Notification privacy mode to hide prompt text from lock-screen notifications.
+- Notification privacy mode to hide prompt text from lock-screen notifications, with `project-only` as the safe default.
 - Session names in notification titles when Pi sessions are named.
 - Provider, notifier, and lifecycle test coverage.
 - npm package-content verification in CI and release workflows.
