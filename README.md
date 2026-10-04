@@ -22,19 +22,59 @@ pi-knock does not run its own push server and does not require a companion app.
 
 ## Install
 
-Install directly from GitHub:
+### Stable Git release
+
+```bash
+pi install git:github.com/Asigers/pi-knock@v0.2.1
+```
+
+### Latest from main
 
 ```bash
 pi install git:github.com/Asigers/pi-knock
 ```
 
-Then restart Pi or run `/reload`.
+### npm
 
-You can also try it without permanently installing:
+After the npm package is published:
 
 ```bash
-pi -e git:github.com/Asigers/pi-knock
+pi install npm:@asigers/pi-knock
 ```
+
+Restart Pi or run `/reload` after installing.
+
+### Try without installing
+
+```bash
+pi -ne -e git:github.com/Asigers/pi-knock
+```
+
+## Update and remove
+
+Update installed Pi packages:
+
+```bash
+pi update --extensions
+```
+
+A Git install pinned to a tag such as `@v0.2.1` stays on that tag. Install a newer tag when you intentionally want to upgrade.
+
+Remove the Git package:
+
+```bash
+pi remove git:github.com/Asigers/pi-knock
+```
+
+For the npm package:
+
+```bash
+pi remove npm:@asigers/pi-knock
+```
+
+## Compatibility
+
+The supported baseline is Pi 0.87+. The Pi host packages are declared as peer dependencies using the Pi package convention; they are supplied by Pi rather than bundled by pi-knock.
 
 ## Quick start
 
@@ -182,7 +222,7 @@ Contains ordinary behavior and endpoint settings only:
 }
 ```
 
-See [`pi-knock.example.json`](./pi-knock.example.json).
+See [`pi-knock.example.json`](./pi-knock.example.json) and [`config.schema.json`](./config.schema.json).
 
 ### `credentials.json`
 
@@ -308,10 +348,12 @@ By default, notifications include a short form of the current user prompt. Redac
 ## Development
 
 ```bash
-npm install --ignore-scripts
+npm ci --ignore-scripts
 npm run check
-pi -e .
+pi -ne -e ./src/index.ts
 ```
+
+Using `-ne` avoids loading another installed copy of pi-knock while testing the checkout, which prevents duplicate notifications.
 
 ## Roadmap
 
@@ -332,6 +374,10 @@ pi -e .
 - [ ] per-project notification policy
 - [ ] notification redaction controls
 - [ ] remote reply / approval experiments
+
+## Releases
+
+Changes are tracked in [CHANGELOG.md](./CHANGELOG.md). Security reporting guidance is in [SECURITY.md](./SECURITY.md).
 
 ## License
 
