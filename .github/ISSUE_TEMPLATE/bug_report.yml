@@ -1,0 +1,74 @@
+name: Bug report
+description: Report a reproducible pi-knock problem
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste Pushover tokens, ntfy access tokens, webhook bearer tokens, or the contents of credentials.json.
+  - type: input
+    id: pi_knock_version
+    attributes:
+      label: pi-knock version
+      placeholder: "0.2.1"
+    validations:
+      required: true
+  - type: input
+    id: pi_version
+    attributes:
+      label: Pi version
+      placeholder: "0.87.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Notification provider
+      options:
+        - Pushover
+        - ntfy
+        - Webhook
+        - Multiple providers
+        - Not provider-specific
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - WSL
+        - Pi-Web / remote session
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Include the shortest reliable sequence that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: /knock status
+      description: Paste the output, after confirming it contains no secrets.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove tokens, private URLs, and sensitive prompt content before posting.
+      render: text
