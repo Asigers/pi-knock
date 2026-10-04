@@ -45,7 +45,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "test": "node -e \"require('node:fs').rmSync('.test-dist',{recursive:true,force:true})\" && tsc --outDir .test-dist --noEmit false --rewriteRelativeImportExtensions && node --test .test-dist/test/*.test.js",
     "check": "npm run typecheck && npm test"
   },
   "files": [
