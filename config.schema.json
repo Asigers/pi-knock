@@ -23,7 +23,7 @@
     "contentMode": {
       "type": "string",
       "enum": ["prompt", "project-only"],
-      "default": "prompt",
+      "default": "project-only",
       "description": "Whether notifications may include compacted user prompt text."
     },
     "notify": {
