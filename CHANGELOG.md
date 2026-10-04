@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- Automatic notification delivery retries for transient failures.
+- `/knock doctor` diagnostics with last-delivery status and attempt count.
+- Notification privacy mode to hide prompt text from lock-screen notifications.
+- Session names in notification titles when Pi sessions are named.
+- Provider, notifier, and lifecycle test coverage.
+- npm package-content verification in CI and release workflows.
+
+### Changed
+
+- Duplicate `agent_settled` events are ignored once a run has already settled.
+- Notification setup now includes a dedicated preferences screen.
+- Documentation files and the Chinese README are included in the npm package.
+
+
 ## [0.2.1] - 2026-10-03
 
 ### Changed
