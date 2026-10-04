@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { basename } from "node:path";
-import type { KnockEvent, KnockEventType } from "./types.js";
+import type { KnockEvent, KnockEventType, NotificationContentMode } from "./types.js";
 
 export function projectName(cwd: string, configuredName = ""): string {
   return configuredName.trim() || basename(cwd) || "Pi";
@@ -34,15 +35,23 @@ function label(type: KnockEventType): string {
 export function makeEvent(input: {
   type: KnockEventType;
   project: string;
+  sessionName?: string;
   prompt?: string;
   durationMs?: number;
   openUrl?: string;
   inputKind?: string;
   inputTitle?: string;
+  contentMode?: NotificationContentMode;
 }): KnockEvent {
-  const prompt = input.prompt ? compactText(input.prompt) : undefined;
+  const contentMode = input.contentMode ?? "prompt";
+  const prompt = contentMode === "prompt" && input.prompt ? compactText(input.prompt) : undefined;
   const duration = input.durationMs === undefined ? "" : ` · ${formatDuration(input.durationMs)}`;
-  const title = `${input.project} · ${label(input.type)}`;
+  const sessionName = input.sessionName?.trim()
+    ? compactText(input.sessionName.trim(), 48)
+    : undefined;
+  const context = sessionName ? `${input.project} · ${sessionName}` : input.project;
+  const title = `${context} · ${label(input.type)}`;
+
   let message: string;
   if (input.type === "input") {
     const detail = compactText(input.inputTitle || input.inputKind || "Pi is waiting for input", 100);
@@ -50,9 +59,18 @@ export function makeEvent(input: {
   } else {
     message = prompt ? `${prompt}${duration}` : `${label(input.type)}${duration}`;
   }
+
   return {
-    type: input.type, title, message, project: input.project, prompt,
-    durationMs: input.durationMs, openUrl: input.openUrl || undefined,
-    timestamp: new Date().toISOString(), inputKind: input.inputKind,
+    id: randomUUID(),
+    type: input.type,
+    title,
+    message,
+    project: input.project,
+    sessionName,
+    prompt,
+    durationMs: input.durationMs,
+    openUrl: input.openUrl || undefined,
+    timestamp: new Date().toISOString(),
+    inputKind: input.inputKind,
   };
 }
