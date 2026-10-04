@@ -112,7 +112,13 @@ Notifications use the project name and, when available, the Pi session name. By 
 
 To change this, run `/knock setup` and choose **Notification preferences**.
 
-Delivery uses up to three attempts for transient network errors and retryable provider responses such as HTTP 429 / 5xx. Permanent 4xx errors fail immediately. Use `/knock doctor` to inspect the most recent delivery result.
+Delivery uses up to three attempts (the initial request plus two retries) for timeouts, transient network errors, and retryable provider responses such as HTTP 429 / 5xx. Permanent 4xx errors fail immediately.
+
+Pushover allows 10 seconds per request, with 5-second and 10-second waits before retries. ntfy and webhook requests keep their 5-second timeouts and 1-second / 3-second retry waits.
+
+Delivery failures are silent: automatic notifications and tests from `/knock test` or setup do not display failure warnings or print errors. Test feedback only lists successful channels. Use `/knock doctor` when you want to inspect failures and attempt counts.
+
+A timed-out request may already have been accepted by the provider, so retries can occasionally produce duplicate notifications.
 
 ## Configuration
 

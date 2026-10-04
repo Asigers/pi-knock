@@ -3,6 +3,7 @@ import test from "node:test";
 import { sendNtfy } from "../src/channels/ntfy.ts";
 import { sendPushover } from "../src/channels/pushover.ts";
 import { sendWebhook } from "../src/channels/webhook.ts";
+import { DeliveryError } from "../src/errors.ts";
 import type { KnockEvent } from "../src/types.ts";
 
 const event: KnockEvent = {
@@ -15,8 +16,13 @@ const event: KnockEvent = {
   openUrl: "https://example.com/session",
 };
 
-test("Pushover sends the expected form payload", async () => {
+test("Pushover sends the expected form payload", async (t) => {
   const originalFetch = globalThis.fetch;
+  let timeoutMs: number | undefined;
+  t.mock.method(AbortSignal, "timeout", (ms: number) => {
+    timeoutMs = ms;
+    return new AbortController().signal;
+  });
   let request: { url: string; init?: RequestInit } | undefined;
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     request = { url: String(url), init };
@@ -29,6 +35,7 @@ test("Pushover sends the expected form payload", async () => {
       event,
     );
     assert.equal(request?.url, "https://api.pushover.net/1/messages.json");
+    assert.equal(timeoutMs, 10_000);
     const body = request?.init?.body as URLSearchParams;
     assert.equal(body.get("user"), "user-key");
     assert.equal(body.get("token"), "app-token");
@@ -36,6 +43,35 @@ test("Pushover sends the expected form payload", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("Pushover turns request timeouts into retryable delivery errors", async (t) => {
+  const reason = new DOMException("The operation was aborted due to timeout", "TimeoutError");
+  t.mock.method(AbortSignal, "timeout", () => AbortSignal.abort(reason));
+  t.mock.method(globalThis, "fetch", async (_url: unknown, init?: RequestInit) => {
+    throw init?.signal?.reason;
+  });
+
+  await assert.rejects(
+    sendPushover({ enabled: true, userKey: "user-key", appToken: "app-token" }, event),
+    (error: unknown) => {
+      assert.ok(error instanceof DeliveryError);
+      assert.equal(error.retryable, true);
+      assert.equal(error.message, "Pushover request timed out after 10s");
+      return true;
+    },
+  );
+});
+
+test("Pushover preserves network errors that are not timeouts", async (t) => {
+  const failure = new TypeError("fetch failed");
+  t.mock.method(AbortSignal, "timeout", () => new AbortController().signal);
+  t.mock.method(globalThis, "fetch", async () => { throw failure; });
+
+  await assert.rejects(
+    sendPushover({ enabled: true, userKey: "user-key", appToken: "app-token" }, event),
+    (error: unknown) => error === failure,
+  );
 });
 
 test("ntfy encodes topics and includes the event id", async () => {

@@ -112,7 +112,13 @@ pi install git:github.com/Asigers/pi-knock
 
 为了避免敏感 Prompt 出现在手机或手表锁屏上，默认使用 **project-only** 模式，不发送原始 Prompt。需要显示 Prompt 时，执行 `/knock setup`，选择 **Notification preferences** 修改。
 
-对于瞬时网络错误以及 HTTP 429 / 5xx 等可重试错误，pi-knock 最多尝试 3 次；永久性的 4xx 错误不会无意义重试。可以用 `/knock doctor` 查看最近一次投递结果和尝试次数。
+对于请求超时、瞬时网络错误以及 HTTP 429 / 5xx 等可重试错误，pi-knock 最多尝试 3 次（首次发送 + 2 次重试）；永久性的 4xx 错误不会无意义重试。
+
+Pushover 单次请求最多等待 10 秒，两次重试前分别等待 5 秒和 10 秒。ntfy 和 Webhook 保持单次 5 秒超时，重试前分别等待 1 秒和 3 秒。
+
+投递失败保持静默：自动通知、`/knock test` 和配置向导中的测试都不会弹出失败警告或打印错误，测试反馈只显示成功的渠道。需要排查时，主动运行 `/knock doctor` 查看失败原因和尝试次数。
+
+请求超时不代表服务端没有接收到消息，因此重试偶尔可能产生重复通知。
 
 ## 配置
 

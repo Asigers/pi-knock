@@ -101,13 +101,11 @@ async function sendTest(
   onlyChannels?: ChannelName[],
 ): Promise<string> {
   const results = await notify(config, testEvent(config, cwd), onlyChannels);
-  if (results.length === 0) return "No configured notification channel matched this test.";
   return results
+    .filter((result) => result.ok)
     .map((result) => {
       const attempts = result.attempts > 1 ? " after " + result.attempts + " attempts" : "";
-      return result.ok
-        ? "✓ " + result.channel + attempts
-        : "✗ " + result.channel + attempts + ": " + result.error;
+      return "✓ " + result.channel + attempts;
     })
     .join("\n");
 }
@@ -164,7 +162,7 @@ export function registerKnockCommands(pi: ExtensionAPI, options: CommandOptions)
 
         if (action === "test") {
           const result = await sendTest(options.getConfig(), ctx.cwd);
-          ctx.ui.notify(result, result.includes("✗") || result.startsWith("No ") ? "warning" : "info");
+          if (result) ctx.ui.notify(result, "info");
           return;
         }
 
@@ -226,10 +224,7 @@ export function registerKnockCommands(pi: ExtensionAPI, options: CommandOptions)
           const updated = options.reloadConfig();
 
           const result = await sendTest(updated, ctx.cwd, ["pushover"]);
-          ctx.ui.notify(
-            "Pushover saved.\n" + result,
-            result.includes("✗") ? "warning" : "info",
-          );
+          if (result) ctx.ui.notify("Pushover saved.\n" + result, "info");
           return;
         }
 
@@ -269,7 +264,7 @@ export function registerKnockCommands(pi: ExtensionAPI, options: CommandOptions)
           const updated = options.reloadConfig();
 
           const result = await sendTest(updated, ctx.cwd, ["ntfy"]);
-          ctx.ui.notify("ntfy saved.\n" + result, result.includes("✗") ? "warning" : "info");
+          if (result) ctx.ui.notify("ntfy saved.\n" + result, "info");
           return;
         }
 
@@ -301,7 +296,7 @@ export function registerKnockCommands(pi: ExtensionAPI, options: CommandOptions)
           const updated = options.reloadConfig();
 
           const result = await sendTest(updated, ctx.cwd, ["webhook"]);
-          ctx.ui.notify("Webhook saved.\n" + result, result.includes("✗") ? "warning" : "info");
+          if (result) ctx.ui.notify("Webhook saved.\n" + result, "info");
         }
       });
     },

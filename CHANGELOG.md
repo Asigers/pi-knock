@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-04
+
 ### Added
 
 - Automatic notification delivery retries for transient failures.
@@ -17,6 +19,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Changed
 
+- Notification delivery failures are silent, including lifecycle notifications and setup/test requests; failure details remain available on demand through `/knock doctor`.
+- Pushover requests now allow 10 seconds, with 5-second / 10-second backoff between up to three delivery attempts and clearer timeout errors.
 - Duplicate `agent_settled` events are ignored once a run has already settled.
 - Notification setup now includes a dedicated preferences screen.
 - Documentation files and the Chinese README are included in the npm package.
@@ -51,7 +55,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Pushover support for iPhone / Apple Watch.
 - Basic tests and CI.
 
-[Unreleased]: https://github.com/Asigers/pi-knock/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Asigers/pi-knock/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Asigers/pi-knock/releases/tag/v0.3.0
 [0.2.1]: https://github.com/Asigers/pi-knock/releases/tag/v0.2.1
 [0.2.0]: https://github.com/Asigers/pi-knock/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Asigers/pi-knock/releases/tag/v0.1.0

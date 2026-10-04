@@ -23,6 +23,7 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_DELAYS_MS = [1_000, 3_000];
+const PUSHOVER_RETRY_DELAYS_MS = [5_000, 10_000];
 let lastDeliveryReport: DeliveryReport | undefined;
 
 function sleep(ms: number): Promise<void> {
@@ -90,7 +91,11 @@ export async function notify(
     config.pushover.userKey &&
     config.pushover.appToken
   ) {
-    jobs.push(runWithRetry("pushover", () => sendPushover(config.pushover, event)));
+    jobs.push(runWithRetry(
+      "pushover",
+      () => sendPushover(config.pushover, event),
+      { retryDelaysMs: PUSHOVER_RETRY_DELAYS_MS },
+    ));
   }
 
   if (

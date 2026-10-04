@@ -143,6 +143,8 @@ Application API Token
 
 ### 没收到测试通知
 
+发送失败时会保持静默，包括 `/knock test` 和配置向导中的测试，不会弹出失败警告或打印错误。可以先运行 `/knock doctor` 查看最近一次投递结果。
+
 优先检查：
 
 - Pushover App 是否已经登录并注册设备
@@ -151,6 +153,16 @@ Application API Token
 - Application API Token 是否复制完整
 - User Key 和 API Token 是否填反
 - 当前网络是否能够访问 Pushover
+
+### 诊断显示请求超时
+
+这表示本地 HTTP 请求达到等待上限后被取消，通常与网络连接或服务响应较慢有关，不等于 User Key / API Token 错误。
+
+Pushover 单次请求最多等待 10 秒；遇到超时、瞬时网络错误或 HTTP 429 / 5xx 时，会在等待 5 秒、10 秒后分别重试一次，最多尝试 3 次。全部超时时，整个过程约需 45 秒，失败后保持静默；只有主动运行 `/knock doctor` 时才会看到 `Pushover request timed out after 10s`。凭据无效等永久性的 4xx 错误不会重试。
+
+用 `/knock doctor` 查看最近一次结果及尝试次数。如果持续失败，请检查当前机器能否访问 `https://api.pushover.net`，以及网络和代理配置；重试无法解决长期无法连接的问题。
+
+> 超时不能确认服务端是否已经接收到消息，因此重试偶尔可能导致重复通知。
 
 ### Apple Watch 没通知，但 iPhone 有
 

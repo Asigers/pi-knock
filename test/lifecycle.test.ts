@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import piKnock from "../src/index.ts";
+import { getLastDeliveryReport } from "../src/notifier.ts";
 
 type Handler = (...args: any[]) => Promise<void> | void;
 
@@ -90,4 +91,71 @@ test("lifecycle sends one settled notification, includes session name, and suppr
     if (oldMode === undefined) delete process.env.PI_KNOCK_CONTENT_MODE;
     else process.env.PI_KNOCK_CONTENT_MODE = oldMode;
   }
+});
+
+test("failed lifecycle notifications retry silently and preserve diagnostics", async (t) => {
+  const directory = mkdtempSync(join(tmpdir(), "pi-knock-silent-"));
+  const overrides: Record<string, string> = {
+    PI_KNOCK_HOME: directory,
+    PI_KNOCK_CONFIG: join(directory, "config.json"),
+    PI_KNOCK_CREDENTIALS: join(directory, "credentials.json"),
+    PI_KNOCK_WEBHOOK_URL: "https://example.com/hook",
+    PI_KNOCK_WEBHOOK_ENABLED: "true",
+    PI_KNOCK_NTFY_ENABLED: "false",
+    PI_KNOCK_PUSHOVER_ENABLED: "false",
+    PI_KNOCK_NOTIFY_INPUT: "true",
+    PI_KNOCK_NOTIFY_COMPLETED: "true",
+    PI_KNOCK_NOTIFY_ERROR: "true",
+  };
+  const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(overrides)) process.env[key] = value;
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  const errors = t.mock.method(console, "error", () => {});
+  const warnings = t.mock.method(console, "warn", () => {});
+  const logs = t.mock.method(console, "log", () => {});
+  const originalSetTimeout = globalThis.setTimeout;
+  t.mock.method(globalThis, "setTimeout", (callback: () => void) => originalSetTimeout(callback, 0));
+  t.mock.method(AbortSignal, "timeout", () => new AbortController().signal);
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    calls += 1;
+    throw new TypeError("fetch failed");
+  });
+
+  const handlers = new Map<string, Handler>();
+  const pi = {
+    on(name: string, handler: Handler) { handlers.set(name, handler); },
+    registerCommand() {},
+    getSessionName() { return "Silent failures"; },
+  } as any;
+  const notification = t.mock.fn();
+  const ctx = { cwd: "/tmp/demo-project", hasUI: true, ui: { notify: notification } };
+  piKnock(pi);
+
+  await handlers.get("session_start")?.({}, ctx);
+  await handlers.get("before_agent_start")?.({ prompt: "a task" });
+  await handlers.get("ui_prompt_start")?.({ kind: "confirm", title: "Continue?" }, ctx);
+  assert.equal(calls, 3);
+  assert.equal(getLastDeliveryReport()?.eventType, "input");
+
+  await handlers.get("agent_before_settle")?.({ outcome: "error" });
+  await handlers.get("agent_settled")?.({}, ctx);
+  await handlers.get("agent_settled")?.({}, ctx);
+
+  assert.equal(calls, 6, "each failed notification retries twice, without duplicate settled delivery");
+  assert.equal(notification.mock.callCount(), 0);
+  assert.equal(errors.mock.callCount(), 0);
+  assert.equal(warnings.mock.callCount(), 0);
+  assert.equal(logs.mock.callCount(), 0);
+  assert.equal(getLastDeliveryReport()?.eventType, "error");
+  assert.deepEqual(getLastDeliveryReport()?.results, [{
+    channel: "webhook", ok: false, attempts: 3, error: "fetch failed",
+  }]);
 });

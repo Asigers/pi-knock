@@ -1,6 +1,6 @@
 {
   "name": "@asigers/pi-knock",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Remote notifications for Pi when a task finishes, fails, or needs your attention.",
   "type": "module",
   "license": "MIT",

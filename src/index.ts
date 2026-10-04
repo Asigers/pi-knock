@@ -58,14 +58,8 @@ export default function piKnock(pi: ExtensionAPI): void {
       inputTitle: extra.inputTitle,
       contentMode: config.contentMode,
     });
-    const results = await notify(config, event);
-    const failed = results.filter((result) => !result.ok);
-    if (failed.length > 0) {
-      console.error(
-        "[pi-knock] notification failed: " +
-        failed.map((item) => item.channel + ": " + item.error).join("; "),
-      );
-    }
+    // Failed deliveries remain available via /knock doctor without interrupting the user.
+    await notify(config, event);
   }
 
   registerKnockCommands(pi, {
