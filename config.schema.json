@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Asigers/pi-knock/main/config.schema.json",
+  "title": "pi-knock configuration",
+  "description": "Non-secret pi-knock settings. Credentials belong in credentials.json or environment variables.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "projectName": {
+      "type": "string",
+      "default": "",
+      "description": "Optional project name override used in notification titles."
+    },
+    "openUrl": {
+      "type": "string",
+      "default": "",
+      "description": "Optional URL opened from providers that support notification links."
+    },
+    "notify": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "completed": { "type": "boolean", "default": true },
+        "error": { "type": "boolean", "default": true },
+        "aborted": { "type": "boolean", "default": false },
+        "input": { "type": "boolean", "default": true }
+      }
+    },
+    "ntfy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "server": {
+          "type": "string",
+          "default": "https://ntfy.sh",
+          "description": "ntfy server base URL."
+        },
+        "topic": {
+          "type": "string",
+          "default": "",
+          "description": "ntfy topic name. Access tokens belong in credentials.json."
+        }
+      }
+    },
+    "pushover": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false }
+      }
+    },
+    "webhook": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "url": {
+          "type": "string",
+          "default": "",
+          "description": "Webhook endpoint. Bearer tokens belong in credentials.json."
+        }
+      }
+    }
+  }
+}
