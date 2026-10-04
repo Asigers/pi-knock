@@ -18,3 +18,5 @@ jobs:
           node-version: "22.19.0"
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
+      - name: Verify npm package contents
+        run: npm pack --dry-run
