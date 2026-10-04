@@ -33,7 +33,7 @@ jobs:
 
       - name: Read package version
         id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+        run: node -e "console.log('version=' + require('./package.json').version)" >> "$GITHUB_OUTPUT"
 
       - name: Check npm version
         id: npm
