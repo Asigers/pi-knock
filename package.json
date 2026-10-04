@@ -1,7 +1,7 @@
 {
   "name": "@asigers/pi-knock",
   "version": "0.2.1",
-  "description": "Get notified when your Pi agent finishes, fails, or needs your attention.",
+  "description": "Remote notifications for Pi when a task finishes, fails, or needs your attention.",
   "type": "module",
   "license": "MIT",
   "author": "Asigers",
@@ -12,7 +12,9 @@
     "notification",
     "ntfy",
     "pushover",
-    "apple-watch"
+    "apple-watch",
+    "remote-notification",
+    "pi-web"
   ],
   "repository": {
     "type": "git",
@@ -48,7 +50,9 @@
   },
   "files": [
     "src",
+    "docs",
     "README.md",
+    "README.zh-CN.md",
     "CHANGELOG.md",
     "SECURITY.md",
     "LICENSE",
