@@ -1,11 +1,14 @@
 export type KnockEventType = "completed" | "error" | "aborted" | "input";
 export type ChannelName = "ntfy" | "pushover" | "webhook";
+export type NotificationContentMode = "prompt" | "project-only";
 
 export interface KnockEvent {
+  id: string;
   type: KnockEventType;
   title: string;
   message: string;
   project: string;
+  sessionName?: string;
   prompt?: string;
   durationMs?: number;
   openUrl?: string;
@@ -42,6 +45,7 @@ export interface WebhookConfig {
 export interface KnockConfig {
   projectName: string;
   openUrl: string;
+  contentMode: NotificationContentMode;
   notify: NotifyConfig;
   ntfy: NtfyConfig;
   pushover: PushoverConfig;
