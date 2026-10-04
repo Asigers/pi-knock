@@ -31,6 +31,9 @@ jobs:
       - name: Check
         run: npm run check
 
+      - name: Verify npm package contents
+        run: npm pack --dry-run
+
       - name: Read package version
         id: version
         run: node -e "console.log('version=' + require('./package.json').version)" >> "$GITHUB_OUTPUT"
