@@ -16,5 +16,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.19.0"
-      - run: npm install --ignore-scripts
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
