@@ -24,6 +24,7 @@ test("new environment variable names configure channels", () => {
     PI_KNOCK_PUSHOVER_USER_KEY: "user-key",
     PI_KNOCK_PUSHOVER_APP_TOKEN: "app-token",
     PI_KNOCK_NOTIFY_ABORTED: "true",
+    PI_KNOCK_CONTENT_MODE: "prompt",
   };
   const config = loadConfig(env);
   assert.equal(config.ntfy.topic, "agent-events");
@@ -33,6 +34,7 @@ test("new environment variable names configure channels", () => {
   assert.equal(config.pushover.appToken, "app-token");
   assert.equal(config.pushover.enabled, true);
   assert.equal(config.notify.aborted, true);
+  assert.equal(config.contentMode, "prompt");
 });
 
 test("legacy environment variable names remain supported", () => {
@@ -119,4 +121,18 @@ test("loadStoredCredentials never reads environment secrets", () => {
 
   const stored = loadStoredCredentials(env);
   assert.equal(stored.pushover, undefined);
+});
+
+
+test("project-only is the safe default and is persisted", () => {
+  const env = tempEnv();
+  const config = loadConfig(env);
+  assert.equal(config.contentMode, "project-only");
+
+  config.contentMode = "prompt";
+  saveConfig(config, env);
+
+  const saved = JSON.parse(readFileSync(resolveConfigPaths(env).configFile, "utf8"));
+  assert.equal(saved.contentMode, "prompt");
+  assert.equal(loadConfig(env).contentMode, "prompt");
 });
