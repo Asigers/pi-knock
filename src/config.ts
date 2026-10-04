@@ -1,13 +1,19 @@
 import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { ConfigPaths, KnockConfig, KnockCredentials } from "./types.js";
+import type {
+  ConfigPaths,
+  KnockConfig,
+  KnockCredentials,
+  NotificationContentMode,
+} from "./types.js";
 
 type JsonRecord = Record<string, unknown>;
 
 const DEFAULT_CONFIG: KnockConfig = {
   projectName: "",
   openUrl: "",
+  contentMode: "project-only",
   notify: { completed: true, error: true, aborted: false, input: true },
   ntfy: { enabled: false, server: "https://ntfy.sh", topic: "", accessToken: "" },
   pushover: { enabled: false, userKey: "", appToken: "" },
@@ -43,6 +49,14 @@ function nested(record: JsonRecord, key: string): JsonRecord {
 function toBoolean(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined || value === "") return fallback;
   return !["0", "false", "no", "off"].includes(value.toLowerCase());
+}
+
+function contentModeValue(value: unknown): NotificationContentMode | undefined {
+  return value === "prompt" || value === "project-only" ? value : undefined;
+}
+
+function envContentMode(value: string | undefined, fallback: NotificationContentMode): NotificationContentMode {
+  return contentModeValue(value) ?? fallback;
 }
 
 function firstDefined<T>(...values: Array<T | undefined>): T | undefined {
@@ -128,6 +142,11 @@ function mergeFileSources(legacy: JsonRecord, configFile: JsonRecord, credential
       stringValue(configFile.openUrl),
       stringValue(legacy.openUrl),
       DEFAULT_CONFIG.openUrl,
+    )!,
+    contentMode: firstDefined(
+      contentModeValue(configFile.contentMode),
+      contentModeValue(legacy.contentMode),
+      DEFAULT_CONFIG.contentMode,
     )!,
     notify: {
       completed: firstDefined(
@@ -218,6 +237,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): KnockConfig {
     ...fromFiles,
     projectName: env.PI_KNOCK_PROJECT ?? fromFiles.projectName,
     openUrl: env.PI_KNOCK_OPEN_URL ?? fromFiles.openUrl,
+    contentMode: envContentMode(env.PI_KNOCK_CONTENT_MODE, fromFiles.contentMode),
     notify: {
       completed: toBoolean(env.PI_KNOCK_NOTIFY_COMPLETED, fromFiles.notify.completed),
       error: toBoolean(env.PI_KNOCK_NOTIFY_ERROR, fromFiles.notify.error),
@@ -290,6 +310,7 @@ export function saveConfig(config: KnockConfig, env: NodeJS.ProcessEnv = process
   writeJson(configFile, {
     projectName: config.projectName,
     openUrl: config.openUrl,
+    contentMode: config.contentMode,
     notify: config.notify,
     ntfy: {
       enabled: config.ntfy.enabled,

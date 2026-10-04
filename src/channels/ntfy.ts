@@ -1,3 +1,4 @@
+import { httpDeliveryError } from "../errors.js";
 import type { KnockEvent, NtfyConfig } from "../types.js";
 
 export async function sendNtfy(config: NtfyConfig, event: KnockEvent): Promise<void> {
@@ -7,6 +8,7 @@ export async function sendNtfy(config: NtfyConfig, event: KnockEvent): Promise<v
     "Content-Type": "text/plain; charset=utf-8",
     Title: event.title,
     Tags: event.type === "completed" ? "white_check_mark" : event.type === "input" ? "bell" : "warning",
+    "X-Pi-Knock-Event-Id": event.id,
   };
   if (config.accessToken) headers.Authorization = "Bearer " + config.accessToken;
   if (event.openUrl) {
@@ -19,5 +21,5 @@ export async function sendNtfy(config: NtfyConfig, event: KnockEvent): Promise<v
     body: event.message,
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw new Error("ntfy returned " + response.status);
+  if (!response.ok) throw httpDeliveryError("ntfy", response.status);
 }

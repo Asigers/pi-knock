@@ -2,6 +2,7 @@
   "$schema": "./config.schema.json",
   "projectName": "",
   "openUrl": "",
+  "contentMode": "project-only",
   "notify": {
     "completed": true,
     "error": true,

@@ -20,36 +20,27 @@
       "default": "",
       "description": "Optional URL opened from providers that support notification links."
     },
+    "contentMode": {
+      "type": "string",
+      "enum": ["prompt", "project-only"],
+      "default": "project-only",
+      "description": "Whether notifications may include compacted user prompt text."
+    },
     "notify": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "completed": {
-          "type": "boolean",
-          "default": true
-        },
-        "error": {
-          "type": "boolean",
-          "default": true
-        },
-        "aborted": {
-          "type": "boolean",
-          "default": false
-        },
-        "input": {
-          "type": "boolean",
-          "default": true
-        }
+        "completed": { "type": "boolean", "default": true },
+        "error": { "type": "boolean", "default": true },
+        "aborted": { "type": "boolean", "default": false },
+        "input": { "type": "boolean", "default": true }
       }
     },
     "ntfy": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false
-        },
+        "enabled": { "type": "boolean", "default": false },
         "server": {
           "type": "string",
           "default": "https://ntfy.sh",
@@ -66,20 +57,14 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false
-        }
+        "enabled": { "type": "boolean", "default": false }
       }
     },
     "webhook": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false
-        },
+        "enabled": { "type": "boolean", "default": false },
         "url": {
           "type": "string",
           "default": "",

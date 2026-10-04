@@ -4,3 +4,4 @@ coverage/
 *.log
 .env
 pi-knock.local.json
+.test-dist/

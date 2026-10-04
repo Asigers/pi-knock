@@ -21,3 +21,20 @@ test("makeEvent includes project, prompt and duration", () => {
   assert.match(event.message, /Fix the test suite/);
   assert.match(event.message, /1m 5s/);
 });
+
+
+test("makeEvent can hide prompt text and include a session name", () => {
+  const event = makeEvent({
+    type: "completed",
+    project: "demo",
+    sessionName: "Auth refactor",
+    prompt: "sensitive production prompt",
+    durationMs: 65_000,
+    contentMode: "project-only",
+  });
+
+  assert.match(event.title, /demo · Auth refactor · Task finished/);
+  assert.equal(event.prompt, undefined);
+  assert.doesNotMatch(event.message, /sensitive production prompt/);
+  assert.ok(event.id);
+});

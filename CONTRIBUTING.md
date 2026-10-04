@@ -36,6 +36,10 @@ Behavior changes should include tests. In particular, lifecycle changes must pre
 
 Notification delivery failures must never break the agent run.
 
+Lifecycle changes should be covered in `test/lifecycle.test.ts`. Provider request changes belong in `test/channels.test.ts`, and retry behavior belongs in `test/notifier.test.ts`.
+
+Before releasing, `npm pack --dry-run` must show the README files and `docs/` content expected by links in the package documentation.
+
 ## Pull requests
 
 Keep changes focused. Update CHANGELOG.md for user-visible changes and avoid committing credentials, provider tokens, private webhook URLs, or local pi-knock configuration.
