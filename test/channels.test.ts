@@ -70,7 +70,7 @@ test("webhook sends a JSON event with a stable event id header", async () => {
   let request: { url: string; init?: RequestInit } | undefined;
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     request = { url: String(url), init };
-    return new Response("", { status: 204 });
+    return new Response(null, { status: 204 });
   }) as typeof fetch;
 
   try {
