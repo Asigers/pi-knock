@@ -1,7 +1,10 @@
 export class DeliveryError extends Error {
-  constructor(message: string, public readonly retryable: boolean) {
+  readonly retryable: boolean;
+
+  constructor(message: string, retryable: boolean) {
     super(message);
     this.name = "DeliveryError";
+    this.retryable = retryable;
   }
 }
 
