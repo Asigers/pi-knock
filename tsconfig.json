@@ -6,8 +6,14 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["node"],
-    "verbatimModuleSyntax": true
+    "types": [
+      "node"
+    ],
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ]
 }
