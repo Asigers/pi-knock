@@ -39,3 +39,17 @@ Notification delivery failures must never break the agent run.
 ## Pull requests
 
 Keep changes focused. Update CHANGELOG.md for user-visible changes and avoid committing credentials, provider tokens, private webhook URLs, or local pi-knock configuration.
+
+
+## Releasing
+
+Releases are published from GitHub Actions using npm Trusted Publishing (OIDC). Do not add a long-lived npm publish token.
+
+For a new release:
+
+1. Update `CHANGELOG.md`.
+2. Bump the version in both `package.json` and `package-lock.json` (for example with `npm version patch --no-git-tag-version`).
+3. Run `npm ci --ignore-scripts && npm run check`.
+4. Commit and push the version bump to `main`.
+
+A `package.json` change on `main` triggers `.github/workflows/release.yml`, which checks the package, publishes the new npm version through OIDC, and creates the matching GitHub release.
