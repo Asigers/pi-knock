@@ -19,8 +19,17 @@ pi-knock 是一个 Pi coding agent 扩展，会在任务**完成、失败或需�
   <img src="https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/notification-preview.svg" alt="pi-knock 手机通知示例" width="720">
 </p>
 
+## 为什么需要 pi-knock？
+
+桌面通知只有人在电脑旁时才有用。pi-knock 让你把任务交给 Pi 后真正离开终端：当任务完成，或 Pi 需要你输入和确认时，通知会直接到达手机或手表。
+
+- **Pi 真正结束后再提醒** — 自动重试和排队任务都处理完、进入 settled 状态后才发送完成通知。
+- **只在需要你时回来** — Pi 等待输入或确认时主动通知你，不必反复查看终端。
+- **离开电脑也能收到** — 可通过 Pushover、ntfy 或自己的 Webhook 自动化接收提醒。
+
 ## 目录
 
+- [为什么需要 pi-knock？](#为什么需要-pi-knock)
 - [功能特点](#功能特点)
 - [快速开始](#快速开始)
 - [命令](#命令)
@@ -58,7 +67,7 @@ pi install npm:@asigers/pi-knock
 如果需要测试未发布源码，可以使用带版本标签的 Git 版：
 
 ```bash
-pi install git:github.com/Asigers/pi-knock@v0.3.0
+pi install git:github.com/Asigers/pi-knock@v0.3.2
 ```
 
 不确定是否重复安装时，运行 `pi list`，只保留一个 `pi-knock` 条目。
