@@ -19,8 +19,17 @@ pi-knock is a Pi coding agent extension that sends remote notifications when a t
   <img src="https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/notification-preview.svg" alt="Example pi-knock phone notification preview" width="720">
 </p>
 
+## Why pi-knock?
+
+Desktop notifications only help when you're near your computer. pi-knock lets you hand work to Pi and walk away: it sends the important moments to your phone or watch.
+
+- **Know when Pi is actually done** — completion alerts fire after Pi has settled, including automatic retries and queued work.
+- **Come back only when Pi needs you** — get notified when input or confirmation is required.
+- **Stay away from the terminal** — receive alerts through Pushover, ntfy, or your own webhook automation.
+
 ## Contents
 
+- [Why pi-knock?](#why-pi-knock)
 - [Features](#features)
 - [Quick start](#quick-start)
 - [Commands](#commands)
@@ -58,7 +67,7 @@ Choose **one** installation source. Do not install both npm and Git versions at 
 For development or unreleased source only, use the tagged Git version instead:
 
 ```bash
-pi install git:github.com/Asigers/pi-knock@v0.3.0
+pi install git:github.com/Asigers/pi-knock@v0.3.2
 ```
 
 If you are unsure which copy is installed, run `pi list` and keep only one `pi-knock` entry.
