@@ -5,6 +5,10 @@ import { makeEvent, projectName } from "./format.js";
 import { notify } from "./notifier.js";
 import type { KnockEventType } from "./types.js";
 
+const SINGLETON_KEY = Symbol.for("pi-knock.runtime");
+
+type PiKnockGlobal = typeof globalThis & { [key: symbol]: unknown };
+
 interface RunState {
   activeRun: boolean;
   startedAt: number | null;
@@ -15,6 +19,19 @@ interface RunState {
 }
 
 export default function piKnock(pi: ExtensionAPI): void {
+  const runtimeGlobal = globalThis as PiKnockGlobal;
+  const instanceToken = Symbol("pi-knock-instance");
+  if (runtimeGlobal[SINGLETON_KEY]) return;
+  runtimeGlobal[SINGLETON_KEY] = instanceToken;
+
+  const releaseSingleton = () => {
+    if (runtimeGlobal[SINGLETON_KEY] === instanceToken) {
+      delete runtimeGlobal[SINGLETON_KEY];
+    }
+  };
+
+  pi.on("session_shutdown", releaseSingleton);
+
   let config = loadConfig();
   const state: RunState = {
     activeRun: false,
@@ -58,8 +75,11 @@ export default function piKnock(pi: ExtensionAPI): void {
       inputTitle: extra.inputTitle,
       contentMode: config.contentMode,
     });
-    // Failed deliveries remain available via /knock doctor without interrupting the user.
-    await notify(config, event);
+    // Do not hold Pi's settled boundary open while a provider retries. The event is
+    // fully materialized above, so the delivery can safely finish in the background.
+    void notify(config, event).catch(() => {
+      // Delivery failures remain available via /knock doctor without interrupting the user.
+    });
   }
 
   registerKnockCommands(pi, {

@@ -1,4 +1,4 @@
-import { DeliveryError, httpDeliveryError } from "../errors.js";
+import { DeliveryError, httpDeliveryError, retryAfterDelayMs } from "../errors.js";
 import type { KnockEvent, PushoverConfig } from "../types.js";
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -30,5 +30,7 @@ export async function sendPushover(config: PushoverConfig, event: KnockEvent): P
     }
     throw error;
   }
-  if (!response.ok) throw httpDeliveryError("Pushover", response.status);
+  if (!response.ok) {
+    throw httpDeliveryError("Pushover", response.status, retryAfterDelayMs(response));
+  }
 }

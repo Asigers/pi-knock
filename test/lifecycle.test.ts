@@ -2,11 +2,16 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { setTimeout as wait } from "node:timers/promises";
 import test from "node:test";
 import piKnock from "../src/index.ts";
 import { getLastDeliveryReport } from "../src/notifier.ts";
 
 type Handler = (...args: any[]) => Promise<void> | void;
+
+async function flushBackgroundDelivery(): Promise<void> {
+  await wait(25);
+}
 
 test("lifecycle sends one settled notification, includes session name, and suppresses duplicates", async () => {
   const oldHome = process.env.PI_KNOCK_HOME;
@@ -83,6 +88,7 @@ test("lifecycle sends one settled notification, includes session name, and suppr
 
     assert.ok(commands.has("knock"));
   } finally {
+    await handlers.get("session_shutdown")?.({}, ctx);
     globalThis.fetch = oldFetch;
     if (oldHome === undefined) delete process.env.PI_KNOCK_HOME;
     else process.env.PI_KNOCK_HOME = oldHome;
@@ -142,12 +148,14 @@ test("failed lifecycle notifications retry silently and preserve diagnostics", a
   await handlers.get("session_start")?.({}, ctx);
   await handlers.get("before_agent_start")?.({ prompt: "a task" });
   await handlers.get("ui_prompt_start")?.({ kind: "confirm", title: "Continue?" }, ctx);
+  await flushBackgroundDelivery();
   assert.equal(calls, 3);
   assert.equal(getLastDeliveryReport()?.eventType, "input");
 
   await handlers.get("agent_before_settle")?.({ outcome: "error" });
   await handlers.get("agent_settled")?.({}, ctx);
   await handlers.get("agent_settled")?.({}, ctx);
+  await flushBackgroundDelivery();
 
   assert.equal(calls, 6, "each failed notification retries twice, without duplicate settled delivery");
   assert.equal(notification.mock.callCount(), 0);
@@ -158,4 +166,29 @@ test("failed lifecycle notifications retry silently and preserve diagnostics", a
   assert.deepEqual(getLastDeliveryReport()?.results, [{
     channel: "webhook", ok: false, attempts: 3, error: "fetch failed",
   }]);
+  await handlers.get("session_shutdown")?.({}, ctx);
+});
+
+test("duplicate pi-knock runtimes are ignored within one process", async () => {
+  const firstHandlers = new Map<string, Handler>();
+  const secondHandlers = new Map<string, Handler>();
+  const firstCommands = new Map<string, unknown>();
+  const secondCommands = new Map<string, unknown>();
+
+  function makePi(handlers: Map<string, Handler>, commands: Map<string, unknown>) {
+    return {
+      on(name: string, handler: Handler) { handlers.set(name, handler); },
+      registerCommand(name: string, command: unknown) { commands.set(name, command); },
+      getSessionName() { return "Duplicate check"; },
+    } as any;
+  }
+
+  piKnock(makePi(firstHandlers, firstCommands));
+  piKnock(makePi(secondHandlers, secondCommands));
+
+  assert.ok(firstCommands.has("knock"));
+  assert.equal(secondCommands.size, 0);
+  assert.ok(firstHandlers.has("agent_settled"));
+  assert.equal(secondHandlers.size, 0);
+  await firstHandlers.get("session_shutdown")?.({}, { hasUI: false });
 });

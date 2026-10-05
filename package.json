@@ -1,6 +1,6 @@
 {
   "name": "@asigers/pi-knock",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Remote notifications for Pi when a task finishes, fails, or needs your attention.",
   "type": "module",
   "license": "MIT",
@@ -9,11 +9,15 @@
     "pi-package",
     "pi-extension",
     "pi",
+    "pi-coding-agent",
+    "ai-coding-agent",
     "notification",
+    "push-notifications",
+    "remote-notification",
     "ntfy",
     "pushover",
     "apple-watch",
-    "remote-notification",
+    "developer-tools",
     "pi-web"
   ],
   "repository": {
@@ -52,9 +56,10 @@
     "src",
     "docs",
     "README.md",
-    "README.zh-CN.md",
     "CHANGELOG.md",
     "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
     "LICENSE",
     "pi-knock.example.json",
     "config.schema.json"

@@ -69,5 +69,6 @@ export interface ConfigPaths {
   directory: string;
   configFile: string;
   credentialsFile: string;
+  deliveryReportFile: string;
   legacyConfigFile: string;
 }

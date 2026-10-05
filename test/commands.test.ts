@@ -57,6 +57,7 @@ function commandHarness(current: KnockConfig, reloadConfig = () => current) {
 
 function fastRetries(t: TestContext) {
   const delays: number[] = [];
+  t.mock.method(Math, "random", () => 0.5);
   const originalSetTimeout = globalThis.setTimeout;
   t.mock.method(globalThis, "setTimeout", (callback: () => void, ms: number) => {
     delays.push(ms);

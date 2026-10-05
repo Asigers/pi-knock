@@ -158,7 +158,7 @@ Application API Token
 
 这表示本地 HTTP 请求达到等待上限后被取消，通常与网络连接或服务响应较慢有关，不等于 User Key / API Token 错误。
 
-Pushover 单次请求最多等待 10 秒；遇到超时、瞬时网络错误或 HTTP 429 / 5xx 时，会在等待 5 秒、10 秒后分别重试一次，最多尝试 3 次。全部超时时，整个过程约需 45 秒，失败后保持静默；只有主动运行 `/knock doctor` 时才会看到 `Pushover request timed out after 10s`。凭据无效等永久性的 4xx 错误不会重试。
+Pushover 单次请求最多等待 10 秒；遇到超时、瞬时网络错误或 HTTP 429 / 5xx 时，默认会在等待 5 秒、10 秒后分别重试一次，最多尝试 3 次。实际等待会加入少量随机抖动，并会遵守服务端返回的 `Retry-After`（最多 60 秒）。全部超时时，整个过程约需 45 秒，但生命周期通知会在后台投递，不会阻塞 Pi；失败后保持静默，只有主动运行 `/knock doctor` 时才会看到 `Pushover request timed out after 10s`。凭据无效等永久性的 4xx 错误不会重试。
 
 用 `/knock doctor` 查看最近一次结果及尝试次数。如果持续失败，请检查当前机器能否访问 `https://api.pushover.net`，以及网络和代理配置；重试无法解决长期无法连接的问题。
 

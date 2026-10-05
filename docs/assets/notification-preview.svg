@@ -1,0 +1,38 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">pi-knock notification preview</title>
+  <desc id="desc">A privacy-safe example of a phone notification from pi-knock when a Pi task finishes.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101827"/>
+      <stop offset="1" stop-color="#1F2937"/>
+    </linearGradient>
+    <linearGradient id="phone" x1="360" y1="70" x2="920" y2="570" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#374151"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <filter id="shadow" x="250" y="18" width="780" height="604" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="640" rx="28" fill="url(#background)"/>
+  <circle cx="1120" cy="90" r="180" fill="#2563EB" fill-opacity="0.12"/>
+  <circle cx="130" cy="590" r="220" fill="#14B8A6" fill-opacity="0.08"/>
+  <text x="80" y="112" fill="#F9FAFB" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="42" font-weight="700">Leave the terminal.</text>
+  <text x="80" y="160" fill="#93C5FD" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="26">Pi will knock when it needs you.</text>
+  <g filter="url(#shadow)">
+    <rect x="330" y="52" width="620" height="536" rx="58" fill="url(#phone)" stroke="#6B7280" stroke-width="3"/>
+    <rect x="354" y="92" width="572" height="456" rx="34" fill="#0B1220"/>
+    <rect x="570" y="69" width="140" height="24" rx="12" fill="#030712"/>
+    <text x="388" y="139" fill="#9CA3AF" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="18">9:41</text>
+    <text x="855" y="139" fill="#9CA3AF" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="18">●●●</text>
+    <rect x="388" y="184" width="504" height="198" rx="24" fill="#F9FAFB"/>
+    <circle cx="433" cy="228" r="22" fill="#2563EB"/>
+    <path d="M425 228h16M433 220v16" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <text x="471" y="224" fill="#111827" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="20" font-weight="700">pi-knock</text>
+    <text x="807" y="224" fill="#6B7280" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="17">now</text>
+    <text x="416" y="278" fill="#111827" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="25" font-weight="700">demo-project · Task finished</text>
+    <text x="416" y="320" fill="#374151" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="21">Finished in 1m 24s</text>
+    <text x="416" y="355" fill="#6B7280" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="17">Prompt text hidden by default</text>
+    <text x="388" y="478" fill="#4B5563" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="18">Example preview · no real credentials or data</text>
+  </g>
+</svg>

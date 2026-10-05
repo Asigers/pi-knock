@@ -1,4 +1,4 @@
-import { httpDeliveryError } from "../errors.js";
+import { httpDeliveryError, retryAfterDelayMs } from "../errors.js";
 import type { KnockEvent, WebhookConfig } from "../types.js";
 
 export async function sendWebhook(config: WebhookConfig, event: KnockEvent): Promise<void> {
@@ -14,5 +14,7 @@ export async function sendWebhook(config: WebhookConfig, event: KnockEvent): Pro
     body: JSON.stringify(event),
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw httpDeliveryError("Webhook", response.status);
+  if (!response.ok) {
+    throw httpDeliveryError("Webhook", response.status, retryAfterDelayMs(response));
+  }
 }

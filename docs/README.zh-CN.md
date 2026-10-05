@@ -1,17 +1,22 @@
 # pi-knock
 
 [![npm 版本](https://img.shields.io/npm/v/%40asigers%2Fpi-knock)](https://www.npmjs.com/package/@asigers/pi-knock)
+[![CI](https://github.com/Asigers/pi-knock/actions/workflows/ci.yml/badge.svg)](https://github.com/Asigers/pi-knock/actions/workflows/ci.yml)
 [![Pi 0.87+](https://img.shields.io/badge/Pi-0.87%2B-blue)](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)
-[![MIT 许可证](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![MIT 许可证](https://img.shields.io/badge/license-MIT-green)](../LICENSE)
 
-[English](./README.md) | 简体中文
+[English](../README.md) | 简体中文
 
 **离开终端。Pi 需要你的时候会来找你。**
 
-pi-knock 会在 Pi 任务**完成、失败或需要你输入**时发送远程通知。可以通过 Pushover 推送到 iPhone / Apple Watch，通过 ntfy 使用托管或自建推送，也可以通过 Webhook 接入自己的自动化服务。
+pi-knock 是一个 Pi coding agent 扩展，会在任务**完成、失败或需要你输入**时发送远程通知。可以通过 Pushover 推送到 iPhone / Apple Watch，通过 ntfy 使用托管或自建推送，也可以通过 Webhook 接入自己的自动化服务。
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/pi-knock-demo.gif" alt="pi-knock 宣传演示：让 Pi 继续工作，在需要你时接收远程通知" width="960">
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/notification-preview.svg" alt="pi-knock 手机通知示例" width="720">
 </p>
 
 ## 目录
@@ -42,17 +47,21 @@ pi-knock 会在 Pi 任务**完成、失败或需要你输入**时发送远程通
 
 ### 1. 安装
 
-从 npm 安装：
+推荐从 npm 安装：
 
 ```bash
 pi install npm:@asigers/pi-knock
 ```
 
-也可以从 GitHub 安装 `main` 分支的最新版本：
+请只选择**一种**安装来源。不要同时安装 npm 版和 Git 版，否则 Pi 可能会加载两份扩展并发送重复通知。
+
+如果需要测试未发布源码，可以使用带版本标签的 Git 版：
 
 ```bash
-pi install git:github.com/Asigers/pi-knock
+pi install git:github.com/Asigers/pi-knock@v0.3.0
 ```
+
+不确定是否重复安装时，运行 `pi list`，只保留一个 `pi-knock` 条目。
 
 ### 2. 配置
 
@@ -95,7 +104,7 @@ pi install git:github.com/Asigers/pi-knock
 | **ntfy** | 托管或自建推送 |
 | **Webhook** | 自己的服务和自动化流程 |
 
-第一次使用 Pushover？查看 **[Pushover 完整配置指南](./docs/pushover-setup.zh-CN.md)**。
+需要配置渠道时，可以查看 [英文渠道配置指南](./providers.md) 或 **[Pushover 完整配置指南](./pushover-setup.zh-CN.md)**。
 
 ## 通知规则
 
@@ -114,9 +123,9 @@ pi install git:github.com/Asigers/pi-knock
 
 对于请求超时、瞬时网络错误以及 HTTP 429 / 5xx 等可重试错误，pi-knock 最多尝试 3 次（首次发送 + 2 次重试）；永久性的 4xx 错误不会无意义重试。
 
-Pushover 单次请求最多等待 10 秒，两次重试前分别等待 5 秒和 10 秒。ntfy 和 Webhook 保持单次 5 秒超时，重试前分别等待 1 秒和 3 秒。
+Pushover 单次请求最多等待 10 秒，两次重试前默认等待 5 秒和 10 秒。ntfy 和 Webhook 保持单次 5 秒超时，重试前默认等待 1 秒和 3 秒。实际等待会加入少量随机抖动，并会遵守服务端返回的 `Retry-After`（最多 60 秒）。
 
-投递失败保持静默：自动通知、`/knock test` 和配置向导中的测试都不会弹出失败警告或打印错误，测试反馈只显示成功的渠道。需要排查时，主动运行 `/knock doctor` 查看失败原因和尝试次数。
+投递失败保持静默：自动通知、`/knock test` 和配置向导中的测试都不会弹出失败警告或打印错误，测试反馈只显示成功的渠道。生命周期通知会在后台投递，不会因为重试阻塞 Pi 的 settled 边界。需要排查时，主动运行 `/knock doctor` 查看失败原因和尝试次数。最近一次报告会保存在本地，不包含通知正文或凭据。
 
 请求超时不代表服务端没有接收到消息，因此重试偶尔可能产生重复通知。
 
@@ -129,11 +138,13 @@ Pushover 单次请求最多等待 10 秒，两次重试前分别等待 5 秒和 
 ```text
 ~/.pi/agent/pi-knock/
 ├── config.json
-└── credentials.json
+├── credentials.json
+└── last-delivery.json
 ```
 
 - `config.json`：保存通知偏好和不含密钥的渠道设置。
 - `credentials.json`：单独保存渠道密钥和令牌，请勿提交到仓库或分享文件内容。
+- `last-delivery.json`：保存最近一次脱敏后的投递状态和尝试次数，供 `/knock doctor` 查看。
 
 可以通过 `PI_KNOCK_HOME` 修改默认目录，也可以通过 `PI_KNOCK_CONFIG` 和 `PI_KNOCK_CREDENTIALS` 分别指定文件路径。
 
@@ -158,7 +169,7 @@ Pushover 单次请求最多等待 10 秒，两次重试前分别等待 5 秒和 
 }
 ```
 
-完整配置见 [`pi-knock.example.json`](./pi-knock.example.json) 和 [`config.schema.json`](./config.schema.json)。
+完整配置见 [`pi-knock.example.json`](../pi-knock.example.json) 和 [`config.schema.json`](../config.schema.json)。
 
 ### 环境变量
 
@@ -169,6 +180,7 @@ Pushover 单次请求最多等待 10 秒，两次重试前分别等待 5 秒和 
 | Pushover 凭据 | `PI_KNOCK_PUSHOVER_USER_KEY`、`PI_KNOCK_PUSHOVER_APP_TOKEN` |
 | ntfy 连接 | `PI_KNOCK_NTFY_SERVER`、`PI_KNOCK_NTFY_TOPIC`、`PI_KNOCK_NTFY_ACCESS_TOKEN` |
 | Webhook 连接 | `PI_KNOCK_WEBHOOK_URL`、`PI_KNOCK_WEBHOOK_BEARER` |
+| 投递报告路径 | `PI_KNOCK_DELIVERY_REPORT`（可选） |
 | 通知内容 | `PI_KNOCK_CONTENT_MODE`（`project-only` 或 `prompt`） |
 
 ## 更新与卸载
@@ -200,13 +212,15 @@ pi -ne -e ./src/index.ts
 
 ## 相关文档
 
-- [Pushover 完整配置指南](./docs/pushover-setup.zh-CN.md)
-- [配置示例](./pi-knock.example.json)与 [JSON Schema](./config.schema.json)
-- [更新记录](./CHANGELOG.md)
-- [安全说明](./SECURITY.md)
-- [贡献指南](./CONTRIBUTING.md)
+- [英文渠道配置指南](./providers.md)
+- [Pushover 完整配置指南](./pushover-setup.zh-CN.md)
+- [配置示例](../pi-knock.example.json)与 [JSON Schema](../config.schema.json)
+- [更新记录](../CHANGELOG.md)
+- [安全说明](../SECURITY.md)
+- [贡献指南](../CONTRIBUTING.md)
+- [行为准则](../CODE_OF_CONDUCT.md)
 - [反馈问题](https://github.com/Asigers/pi-knock/issues)
 
 ## 许可证
 
-[MIT](./LICENSE)
+[MIT](../LICENSE)

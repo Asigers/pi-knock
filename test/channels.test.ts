@@ -63,6 +63,26 @@ test("Pushover turns request timeouts into retryable delivery errors", async (t)
   );
 });
 
+test("Pushover exposes Retry-After for retryable responses", async (t) => {
+  t.mock.method(AbortSignal, "timeout", () => new AbortController().signal);
+  t.mock.method(globalThis, "fetch", async () => {
+    return new Response('{"status":0}', {
+      status: 429,
+      headers: { "Retry-After": "2" },
+    });
+  });
+
+  await assert.rejects(
+    sendPushover({ enabled: true, userKey: "user-key", appToken: "app-token" }, event),
+    (error: unknown) => {
+      assert.ok(error instanceof DeliveryError);
+      assert.equal(error.retryable, true);
+      assert.equal(error.retryAfterMs, 2_000);
+      return true;
+    },
+  );
+});
+
 test("Pushover preserves network errors that are not timeouts", async (t) => {
   const failure = new TypeError("fetch failed");
   t.mock.method(AbortSignal, "timeout", () => new AbortController().signal);

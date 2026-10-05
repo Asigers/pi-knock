@@ -11,11 +11,15 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22.19.0", "24"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22.19.0"
+          node-version: ${{ matrix.node-version }}
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
       - name: Verify npm package contents

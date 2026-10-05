@@ -47,6 +47,7 @@ function statusText(config: KnockConfig): string {
     "",
     "Config        " + paths.configFile,
     "Credentials   " + paths.credentialsFile,
+    "Diagnostics   " + paths.deliveryReportFile,
   ].join("\n");
 }
 
@@ -63,7 +64,7 @@ function doctorText(config: KnockConfig): string {
   ];
 
   if (!report) {
-    lines.push("Last delivery  none in this Pi session");
+    lines.push("Last delivery  none recorded");
   } else if (report.results.length === 0) {
     lines.push("Last delivery  no configured channel matched");
   } else {

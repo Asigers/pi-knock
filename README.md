@@ -1,17 +1,22 @@
 # pi-knock
 
 [![npm version](https://img.shields.io/npm/v/%40asigers%2Fpi-knock)](https://www.npmjs.com/package/@asigers/pi-knock)
+[![CI](https://github.com/Asigers/pi-knock/actions/workflows/ci.yml/badge.svg)](https://github.com/Asigers/pi-knock/actions/workflows/ci.yml)
 [![Pi 0.87+](https://img.shields.io/badge/Pi-0.87%2B-blue)](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)
 [![MIT License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-English | [简体中文](./README.zh-CN.md)
+English | [简体中文](./docs/README.zh-CN.md)
 
 **Leave the terminal. Pi will knock when it needs you.**
 
-pi-knock sends remote notifications when a Pi task **finishes, fails, or needs your input**. Use Pushover for iPhone / Apple Watch, ntfy for hosted or self-hosted push, or a webhook for your own automation.
+pi-knock is a Pi coding agent extension that sends remote notifications when a task **finishes, fails, or needs your input**. Use Pushover for iPhone / Apple Watch, ntfy for hosted or self-hosted push, or a webhook for your own automation.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/pi-knock-demo.gif" alt="pi-knock demo: let Pi work and receive remote notifications when it needs your attention" width="960">
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/notification-preview.svg" alt="Example pi-knock phone notification preview" width="720">
 </p>
 
 ## Contents
@@ -42,17 +47,21 @@ pi-knock sends remote notifications when a Pi task **finishes, fails, or needs y
 
 ### 1. Install
 
-Install from npm:
+The recommended installation is npm:
 
 ```bash
 pi install npm:@asigers/pi-knock
 ```
 
-Or install the latest `main` branch from GitHub:
+Choose **one** installation source. Do not install both npm and Git versions at the same time, or Pi may load the extension twice and send duplicate notifications.
+
+For development or unreleased source only, use the tagged Git version instead:
 
 ```bash
-pi install git:github.com/Asigers/pi-knock
+pi install git:github.com/Asigers/pi-knock@v0.3.0
 ```
+
+If you are unsure which copy is installed, run `pi list` and keep only one `pi-knock` entry.
 
 ### 2. Configure
 
@@ -95,7 +104,7 @@ Run these commands inside Pi:
 | **ntfy** | Hosted or self-hosted push |
 | **Webhook** | Custom integrations and automation |
 
-New to Pushover? See the [Pushover setup guide (简体中文)](./docs/pushover-setup.zh-CN.md).
+For provider setup details, see the [English provider guide](./docs/providers.md) or the [Pushover setup guide (简体中文)](./docs/pushover-setup.zh-CN.md).
 
 ## Notification behavior
 
@@ -114,9 +123,9 @@ To change this, run `/knock setup` and choose **Notification preferences**.
 
 Delivery uses up to three attempts (the initial request plus two retries) for timeouts, transient network errors, and retryable provider responses such as HTTP 429 / 5xx. Permanent 4xx errors fail immediately.
 
-Pushover allows 10 seconds per request, with 5-second and 10-second waits before retries. ntfy and webhook requests keep their 5-second timeouts and 1-second / 3-second retry waits.
+Pushover allows 10 seconds per request, with 5-second and 10-second backoff before retries. ntfy and webhook requests keep their 5-second timeouts and 1-second / 3-second backoff. Delays include a small jitter, and providers' `Retry-After` response is honored up to 60 seconds.
 
-Delivery failures are silent: automatic notifications and tests from `/knock test` or setup do not display failure warnings or print errors. Test feedback only lists successful channels. Use `/knock doctor` when you want to inspect failures and attempt counts.
+Delivery failures are silent: automatic notifications and tests from `/knock test` or setup do not display failure warnings or print errors. Test feedback only lists successful channels. Lifecycle notifications run in the background and do not hold Pi's settled boundary open while retries run. Use `/knock doctor` when you want to inspect failures and attempt counts. The last report is stored locally without notification content or credentials.
 
 A timed-out request may already have been accepted by the provider, so retries can occasionally produce duplicate notifications.
 
@@ -129,11 +138,13 @@ The setup wizard writes two files by default:
 ```text
 ~/.pi/agent/pi-knock/
 ├── config.json
-└── credentials.json
+├── credentials.json
+└── last-delivery.json
 ```
 
 - `config.json` stores notification preferences and non-secret provider settings.
 - `credentials.json` stores provider keys and tokens separately. Do not commit it or share its contents.
+- `last-delivery.json` stores the latest redacted delivery status and attempt count for `/knock doctor`.
 
 Set `PI_KNOCK_HOME` to change the default directory, or use `PI_KNOCK_CONFIG` and `PI_KNOCK_CREDENTIALS` to override individual file paths.
 
@@ -169,6 +180,7 @@ Environment variables override file settings and are useful for Pi-Web, containe
 | Pushover credentials | `PI_KNOCK_PUSHOVER_USER_KEY`, `PI_KNOCK_PUSHOVER_APP_TOKEN` |
 | ntfy connection | `PI_KNOCK_NTFY_SERVER`, `PI_KNOCK_NTFY_TOPIC`, `PI_KNOCK_NTFY_ACCESS_TOKEN` |
 | Webhook connection | `PI_KNOCK_WEBHOOK_URL`, `PI_KNOCK_WEBHOOK_BEARER` |
+| Delivery report path | `PI_KNOCK_DELIVERY_REPORT` (optional) |
 | Notification content | `PI_KNOCK_CONTENT_MODE` (`project-only` or `prompt`) |
 
 ## Update and uninstall
@@ -200,11 +212,13 @@ Using `-ne` prevents another installed copy of pi-knock from loading during loca
 
 ## Documentation
 
+- [English provider setup guide](./docs/providers.md)
 - [Pushover setup guide (简体中文)](./docs/pushover-setup.zh-CN.md)
 - [Configuration example](./pi-knock.example.json) and [JSON Schema](./config.schema.json)
 - [Changelog](./CHANGELOG.md)
 - [Security](./SECURITY.md)
 - [Contributing](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
 - [Report an issue](https://github.com/Asigers/pi-knock/issues)
 
 ## License

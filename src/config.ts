@@ -69,6 +69,7 @@ export function resolveConfigPaths(env: NodeJS.ProcessEnv = process.env): Config
     directory,
     configFile: env.PI_KNOCK_CONFIG || join(directory, "config.json"),
     credentialsFile: env.PI_KNOCK_CREDENTIALS || join(directory, "credentials.json"),
+    deliveryReportFile: env.PI_KNOCK_DELIVERY_REPORT || join(directory, "last-delivery.json"),
     legacyConfigFile: join(homedir(), ".pi", "agent", "pi-knock.json"),
   };
 }

@@ -24,6 +24,7 @@ const event: KnockEvent = {
 
 function mockDeliveryTimers(t: TestContext) {
   const delays: number[] = [];
+  t.mock.method(Math, "random", () => 0.5);
   const timeouts: number[] = [];
   const controllers: AbortController[] = [];
   const originalSetTimeout = globalThis.setTimeout;
@@ -70,6 +71,22 @@ test("runWithRetry does not retry permanent delivery errors", async () => {
   assert.equal(result.ok, false);
   assert.equal(result.attempts, 1);
   assert.equal(calls, 1);
+});
+
+test("runWithRetry honors a provider Retry-After delay", async () => {
+  let calls = 0;
+  const delays: number[] = [];
+  const result = await runWithRetry(
+    "pushover",
+    async () => {
+      calls += 1;
+      if (calls === 1) throw new DeliveryError("Pushover returned 429", true, 4_200);
+    },
+    { retryDelaysMs: [1_000, 3_000], sleep: async (ms) => { delays.push(ms); } },
+  );
+
+  assert.deepEqual(result, { channel: "pushover", ok: true, attempts: 2 });
+  assert.deepEqual(delays, [4_200]);
 });
 
 test("runWithRetry caps persistent network failures at three attempts", async () => {

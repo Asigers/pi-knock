@@ -1,4 +1,5 @@
 import { DeliveryError } from "./errors.js";
+import { loadLastDeliveryReport, saveLastDeliveryReport } from "./delivery-report.js";
 import { sendNtfy } from "./channels/ntfy.js";
 import { sendPushover } from "./channels/pushover.js";
 import { sendWebhook } from "./channels/webhook.js";
@@ -20,11 +21,18 @@ export interface DeliveryReport {
 interface RetryOptions {
   retryDelaysMs?: number[];
   sleep?: (ms: number) => Promise<void>;
+  jitter?: (ms: number) => number;
 }
 
 const DEFAULT_RETRY_DELAYS_MS = [1_000, 3_000];
 const PUSHOVER_RETRY_DELAYS_MS = [5_000, 10_000];
-let lastDeliveryReport: DeliveryReport | undefined;
+
+function jitterDelay(ms: number): number {
+  if (ms <= 0) return 0;
+  return Math.max(0, Math.round(ms * (0.8 + Math.random() * 0.4)));
+}
+
+let lastDeliveryReport: DeliveryReport | undefined = loadLastDeliveryReport();
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -52,7 +60,12 @@ export async function runWithRetry(
     } catch (error) {
       lastError = error;
       if (!isRetryable(error) || index === retryDelaysMs.length) break;
-      await wait(retryDelaysMs[index]);
+      const retryAfterMs = error instanceof DeliveryError ? error.retryAfterMs : undefined;
+      const baseDelayMs = retryAfterMs ?? retryDelaysMs[index];
+      const delayMs = retryAfterMs === undefined && options.jitter
+        ? options.jitter(baseDelayMs)
+        : baseDelayMs;
+      await wait(delayMs);
     }
   }
 
@@ -82,7 +95,11 @@ export async function notify(
     config.ntfy.topic &&
     config.ntfy.server
   ) {
-    jobs.push(runWithRetry("ntfy", () => sendNtfy(config.ntfy, event)));
+    jobs.push(runWithRetry(
+      "ntfy",
+      () => sendNtfy(config.ntfy, event),
+      { jitter: jitterDelay },
+    ));
   }
 
   if (
@@ -94,7 +111,7 @@ export async function notify(
     jobs.push(runWithRetry(
       "pushover",
       () => sendPushover(config.pushover, event),
-      { retryDelaysMs: PUSHOVER_RETRY_DELAYS_MS },
+      { retryDelaysMs: PUSHOVER_RETRY_DELAYS_MS, jitter: jitterDelay },
     ));
   }
 
@@ -103,7 +120,11 @@ export async function notify(
     config.webhook.enabled &&
     config.webhook.url
   ) {
-    jobs.push(runWithRetry("webhook", () => sendWebhook(config.webhook, event)));
+    jobs.push(runWithRetry(
+      "webhook",
+      () => sendWebhook(config.webhook, event),
+      { jitter: jitterDelay },
+    ));
   }
 
   const results = await Promise.all(jobs);
@@ -112,5 +133,6 @@ export async function notify(
     eventType: event.type,
     results,
   };
+  saveLastDeliveryReport(lastDeliveryReport);
   return results;
 }

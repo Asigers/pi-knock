@@ -1,4 +1,4 @@
-import { httpDeliveryError } from "../errors.js";
+import { httpDeliveryError, retryAfterDelayMs } from "../errors.js";
 import type { KnockEvent, NtfyConfig } from "../types.js";
 
 export async function sendNtfy(config: NtfyConfig, event: KnockEvent): Promise<void> {
@@ -21,5 +21,7 @@ export async function sendNtfy(config: NtfyConfig, event: KnockEvent): Promise<v
     body: event.message,
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw httpDeliveryError("ntfy", response.status);
+  if (!response.ok) {
+    throw httpDeliveryError("ntfy", response.status, retryAfterDelayMs(response));
+  }
 }

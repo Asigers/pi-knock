@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-05
+
+### Added
+
+- English provider setup documentation and a privacy-safe notification preview.
+- CI coverage for Node.js 22 and 24, Dependabot configuration, and a Code of Conduct.
+
+### Changed
+
+- npm packages now use the English README as their registry landing page and keep the Chinese README under `docs/`.
+- Lifecycle delivery runs in the background; the most recent non-sensitive delivery report is persisted locally.
+- Retry handling honors `Retry-After` and adds bounded jitter to scheduled backoff.
+- Duplicate pi-knock runtime loads are ignored within one Pi process.
+
 ## [0.3.0] - 2026-10-04
 
 ### Added
@@ -55,7 +69,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Pushover support for iPhone / Apple Watch.
 - Basic tests and CI.
 
-[Unreleased]: https://github.com/Asigers/pi-knock/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Asigers/pi-knock/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Asigers/pi-knock/releases/tag/v0.3.1
 [0.3.0]: https://github.com/Asigers/pi-knock/releases/tag/v0.3.0
 [0.2.1]: https://github.com/Asigers/pi-knock/releases/tag/v0.2.1
 [0.2.0]: https://github.com/Asigers/pi-knock/compare/v0.1.0...v0.2.0

@@ -8,7 +8,7 @@ Security fixes are applied to the latest released version of pi-knock.
 
 Please do not publish credentials, push tokens, webhook secrets, or a working exploit in a public issue.
 
-If GitHub shows **Report a vulnerability** on this repository's Security page, use that private reporting flow. Otherwise, open a minimal issue stating that you need a private security contact, without including sensitive details.
+Use GitHub's **Report a vulnerability** private reporting flow on the repository's Security page. Do not open a public issue for a vulnerability.
 
 Useful information to include privately:
 
