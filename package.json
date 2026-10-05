@@ -37,7 +37,8 @@
   "pi": {
     "extensions": [
       "./src/index.ts"
-    ]
+    ],
+    "image": "https://raw.githubusercontent.com/Asigers/pi-knock/main/docs/assets/pi-knock-demo.gif"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
